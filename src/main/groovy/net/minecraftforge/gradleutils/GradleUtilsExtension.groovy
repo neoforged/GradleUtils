@@ -36,8 +36,6 @@ class GradleUtilsExtension {
     }
 
     String getSimpleVersion() {
-        if (!gitInfo)
-            return '0.0.0'
         return GradleUtils.getSimpleVersion(gitInfo)
     }
 }
