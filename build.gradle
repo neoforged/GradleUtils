@@ -1,0 +1,89 @@
+import net.minecraftforge.gradleutils.GradleUtils
+
+plugins {
+    id 'groovy'
+    id 'maven-publish'
+}
+
+ext {
+    GIT_INFO = GradleUtils.gitInfo(file('.'))
+}
+
+group 'net.minecraftforge'
+version GradleUtils.getSimpleVersion(GIT_INFO)
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.codehaus.groovy:groovy-all:3.0.5'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
+}
+
+task copyGradleUtils(type: Sync) {
+    outputs.upToDateWhen { false }
+    into 'src/main/groovy'
+    from('buildSrc/src/main/groovy') {
+        include '**/*.groovy'
+    }
+}
+
+compileGroovy.dependsOn(copyGradleUtils)
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            pom {
+                name = 'Gradle Utils'
+                description = 'Used by MinecraftForge projects as a util library for Gradle buildscripts'
+                url = 'https://github.com/MinecraftForge/GradleUtils'
+                scm {
+                    url = 'https://github.com/MinecraftForge/GradleUtils'
+                    connection = 'scm:git:git://github.com/MinecraftForge/GradleUtils.git'
+                    developerConnection = 'scm:git:git@github.com:MinecraftForge/GradleUtils.git'
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/MinecraftForge/GradleUtils/issues'
+                }
+
+                licenses {
+                    license {
+                        name = 'LGPLv2.1'
+                        url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'LexManos'
+                        name = 'Lex Manos'
+                    }
+                    developer {
+                        id = 'SizableShrimp'
+                        name = 'SizableShrimp'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            if (System.env.MAVEN_USER) {
+                url 'https://maven.minecraftforge.net/'
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.env.MAVEN_USER ?: 'not'
+                    password = System.env.MAVEN_PASSWORD ?: 'set'
+                }
+            } else {
+                url 'file://' + rootProject.file('repo').getAbsolutePath()
+            }
+        }
+    }
+}

@@ -1,0 +1,20 @@
+plugins {
+    id 'org.cadixdev.licenser' version '0.5.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
+}
+
+license {
+    header = new File(projectDir.parentFile, 'HEADER')
+    ext {
+        name = 'GradleUtils'
+        year = 2021
+        fullname = 'Forge Development LLC'
+    }
+}
