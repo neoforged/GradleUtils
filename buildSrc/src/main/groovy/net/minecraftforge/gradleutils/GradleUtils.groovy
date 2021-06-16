@@ -54,7 +54,8 @@ class GradleUtils {
                     abbreviatedId: '00000000'
             ]
         }
-        def desc = git.describe().setLong(true).setTags(true).call().rsplit('-', 2)
+        def tag = git.describe().setLong(true).setTags(true).call()
+        def desc = tag?.rsplit('-', 2) ?: '0.0'
         def head = git.repository.exactRef('HEAD')
         def longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
 

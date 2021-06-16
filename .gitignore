@@ -16,4 +16,4 @@ out
 *.iml
 
 # src
-src/main/groovy/**/*.groovy
+src/main/groovy/net/minecraftforge/gradleutils/GradleUtils.groovy

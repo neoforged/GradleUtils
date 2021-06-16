@@ -1,8 +1,9 @@
 import net.minecraftforge.gradleutils.GradleUtils
 
 plugins {
-    id 'groovy'
+    id 'groovy-gradle-plugin'
     id 'maven-publish'
+    id 'org.cadixdev.licenser' version '0.6.0'
 }
 
 ext {
@@ -17,11 +18,10 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.codehaus.groovy:groovy-all:3.0.5'
     implementation 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
 }
 
-task copyGradleUtils(type: Sync) {
+task copyGradleUtils(type: Copy) {
     outputs.upToDateWhen { false }
     into 'src/main/groovy'
     from('buildSrc/src/main/groovy') {
@@ -30,11 +30,31 @@ task copyGradleUtils(type: Sync) {
 }
 
 compileGroovy.dependsOn(copyGradleUtils)
+checkLicenseMain.dependsOn(copyGradleUtils)
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+license {
+    header = file('HEADER')
+    ext {
+        name = 'GradleUtils'
+        year = 2021
+        fullname = 'Forge Development LLC'
+    }
+    exclude '**/*.properties'
+}
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            from components.java
+        pluginMaven(MavenPublication) {
+            artifact sourcesJar
 
             pom {
                 name = 'Gradle Utils'
