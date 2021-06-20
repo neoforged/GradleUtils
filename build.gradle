@@ -11,7 +11,7 @@ ext {
 }
 
 group 'net.minecraftforge'
-version GradleUtils.getSimpleVersion(GIT_INFO)
+version GradleUtils.getTagOffsetVersion(GIT_INFO)
 
 repositories {
     mavenCentral()

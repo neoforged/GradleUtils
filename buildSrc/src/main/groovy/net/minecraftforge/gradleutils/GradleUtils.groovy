@@ -40,7 +40,7 @@ class GradleUtils {
         }
     }
 
-    static gitInfo(dir) {
+    static gitInfo(File dir) {
         def git = null
         try {
             git = Git.open(dir)
@@ -55,7 +55,7 @@ class GradleUtils {
             ]
         }
         def tag = git.describe().setLong(true).setTags(true).call()
-        def desc = tag?.rsplit('-', 2) ?: '0.0'
+        def desc = tag?.rsplit('-', 2) ?: ['0.0', '0', '00000000']
         def head = git.repository.exactRef('HEAD')
         def longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
 
@@ -70,7 +70,42 @@ class GradleUtils {
         return ret
     }
 
-    static String getSimpleVersion(info) {
+    /**
+     * Returns a version in the form {@code $tag.$offset}, e.g. 1.0.5
+     * @param info A git info object generated from {@link #gitInfo}
+     * @return a version in the form {@code $tag.$offset}, e.g. 1.0.5
+     */
+    static String getTagOffsetVersion(info) {
         return "${info.tag}.${info.offset}"
+    }
+
+    /**
+     * Returns a version in the form {@code $tag.$offset}, optionally with the branch
+     * appended if it is not in the defined list of allowed branches
+     * @param info A git info object generated from {@link #gitInfo}
+     * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
+     * @return a version in the form {@code $tag.$offset} or {@code $tag.$offset-$branch}
+     */
+    static String getTagOffsetBranchVersion(info, String... allowedBranches) {
+        if (!allowedBranches || allowedBranches.length == 0)
+            allowedBranches = [null, 'master', 'main', 'HEAD']
+        def version = getTagOffsetVersion(info)
+        if (!(info.branch in allowedBranches))
+            return "$version-${info.branch}"
+        return version
+    }
+
+    /**
+     * Returns a version in the form {@code $mcVersion-$tag.$offset}, optionally with
+     * the branch appended if it is not in the defined list of allowed branches
+     * @param mcVersion The current minecraft version
+     * @param info A git info object generated from {@link #gitInfo}
+     * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
+     * @return a version in the form {@code $mcVersion-$tag.$offset} or {@code $mcVersion-$tag.$offset-$branch}
+     */
+    static String getMCTagOffsetBranchVersion(info, String mcVersion, String... allowedBranches) {
+        if (!allowedBranches || allowedBranches.length == 0)
+            allowedBranches = [null, 'master', 'main', 'HEAD', mcVersion, mcVersion + '.0', mcVersion + '.x', mcVersion.rsplit('.', 1)[0] + '.x']
+        return "$mcVersion-${getTagOffsetBranchVersion(info, allowedBranches)}"
     }
 }
