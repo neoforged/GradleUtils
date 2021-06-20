@@ -41,7 +41,7 @@ class GradleUtils {
     }
 
     static gitInfo(File dir) {
-        def git = null
+        def git
         try {
             git = Git.open(dir)
         } catch (RepositoryNotFoundException e) {
@@ -90,8 +90,9 @@ class GradleUtils {
         if (!allowedBranches || allowedBranches.length == 0)
             allowedBranches = [null, 'master', 'main', 'HEAD']
         def version = getTagOffsetVersion(info)
-        if (!(info.branch in allowedBranches))
-            return "$version-${info.branch}"
+        def branch = (info.branch as String).replaceAll(/[\\\/]/, '-')
+        if (!(branch in allowedBranches))
+            return "$version-${branch}"
         return version
     }
 

@@ -37,7 +37,7 @@ class GradleUtilsExtension {
 
         this.gitRoot = project.objects.directoryProperty().convention(project.layout.projectDirectory)
         this.gitInfo = project.objects.mapProperty(String, String)
-                .convention(getGitRoot().map(dir -> GradleUtils.gitInfo(dir.asFile)))
+                .convention(gitRoot.map(dir -> GradleUtils.gitInfo(dir.asFile)))
     }
 
     /**
