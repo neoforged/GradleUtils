@@ -90,10 +90,11 @@ class GradleUtils {
         if (!allowedBranches || allowedBranches.length == 0)
             allowedBranches = [null, 'master', 'main', 'HEAD']
         def version = getTagOffsetVersion(info)
-        def branch = (info.branch as String).replaceAll(/[\\\/]/, '-')
-        if (!(branch in allowedBranches))
-            return "$version-${branch}"
-        return version
+        String branch = info.branch
+        if (branch?.startsWith('pulls/'))
+            branch = 'pr' + branch.rsplit('/', 1)[1]
+        branch = branch?.replaceAll(/[\\\/]/, '-')
+        return branch in allowedBranches ? version : "$version-${branch}"
     }
 
     /**
