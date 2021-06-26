@@ -67,6 +67,9 @@ class GradleUtils {
         ret.commit = ObjectId.toString(head.objectId)
         ret.abbreviatedId = head.objectId.abbreviate(8).name()
 
+        // Remove any lingering null values
+        ret.removeAll {it.value == null }
+
         return ret
     }
 
