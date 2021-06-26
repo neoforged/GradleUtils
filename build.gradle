@@ -1,16 +1,17 @@
 import net.minecraftforge.gradleutils.GradleUtils
 
 plugins {
-    id 'groovy-gradle-plugin'
+    id 'java-gradle-plugin'
+    id 'groovy'
     id 'maven-publish'
-    id 'org.cadixdev.licenser' version '0.6.0'
+    id 'org.cadixdev.licenser' version '0.6.1'
 }
 
 ext {
     GIT_INFO = GradleUtils.gitInfo(file('.'))
 }
 
-group 'net.minecraftforge'
+group 'net.minecraftforge.gradleutils'
 version GradleUtils.getTagOffsetVersion(GIT_INFO)
 
 repositories {
@@ -49,6 +50,15 @@ license {
         fullname = 'Forge Development LLC'
     }
     exclude '**/*.properties'
+}
+
+gradlePlugin {
+    plugins {
+        gradleutils {
+            id = 'net.minecraftforge.gradleutils'
+            implementationClass = 'net.minecraftforge.gradleutils.GradleUtilsPlugin'
+        }
+    }
 }
 
 publishing {
