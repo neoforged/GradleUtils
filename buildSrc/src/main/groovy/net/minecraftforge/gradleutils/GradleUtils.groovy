@@ -40,7 +40,7 @@ class GradleUtils {
         }
     }
 
-    static gitInfo(File dir) {
+    static gitInfo(File dir, String... globFilters) {
         def git
         try {
             git = Git.open(dir)
@@ -54,12 +54,13 @@ class GradleUtils {
                     abbreviatedId: '00000000'
             ]
         }
-        def tag = git.describe().setLong(true).setTags(true).call()
+        def tag = git.describe().setLong(true).setTags(true).setMatch(globFilters ?: new String[0]).call()
         def desc = tag?.rsplit('-', 2) ?: ['0.0', '0', '00000000']
         def head = git.repository.exactRef('HEAD')
         def longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
 
         def ret = [:]
+        ret.dir = dir.absolutePath
         ret.tag = desc[0]
         ret.offset = desc[1]
         ret.hash = desc[2]
@@ -73,8 +74,15 @@ class GradleUtils {
         return ret
     }
 
+    private static getFilteredInfo(info, boolean prefix, String filter) {
+        if (prefix)
+            filter += '**'
+        return gitInfo(new File(info.dir as String), filter)
+    }
+
     /**
      * Returns a version in the form {@code $tag.$offset}, e.g. 1.0.5
+     *
      * @param info A git info object generated from {@link #gitInfo}
      * @return a version in the form {@code $tag.$offset}, e.g. 1.0.5
      */
@@ -83,8 +91,23 @@ class GradleUtils {
     }
 
     /**
+     * Returns a version in the form {@code $tag.$offset}, e.g. 1.0.5.
+     * The provided filter is used to filter the retrieved tag.
+     *
+     * @param info A git info object generated from {@link #gitInfo}
+     * @param prefix If true, will treat the filter as a prefix.
+     * Defaults to false, which means to treat the filter as a glob pattern.
+     * @param filter A non-null @{code String} filter used when retrieving the tag
+     * @return a version in the form {@code $tag.$offset}, e.g. 1.0.5
+     */
+    static String getFilteredTagOffsetVersion(info, boolean prefix = false, String filter) {
+        return getTagOffsetVersion(getFilteredInfo(info, prefix, filter))
+    }
+
+    /**
      * Returns a version in the form {@code $tag.$offset}, optionally with the branch
      * appended if it is not in the defined list of allowed branches
+     *
      * @param info A git info object generated from {@link #gitInfo}
      * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
      * @return a version in the form {@code $tag.$offset} or {@code $tag.$offset-$branch}
@@ -101,10 +124,27 @@ class GradleUtils {
     }
 
     /**
+     * Returns a version in the form {@code $tag.$offset}, optionally with the branch
+     * appended if it is not in the defined list of allowed branches.
+     * The provided filter is used to filter the retrieved tag.
+     *
+     * @param info A git info object generated from {@link #gitInfo}
+     * @param prefix If true, will treat the filter as a prefix.
+     * Defaults to false, which means to treat the filter as a glob pattern.
+     * @param filter A non-null @{code String} filter used when retrieving the tag
+     * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
+     * @return a version in the form {@code $tag.$offset} or {@code $tag.$offset-$branch}
+     */
+    static String getFilteredTagOffsetBranchVersion(info, boolean prefix = false, String filter, String... allowedBranches) {
+        return getTagOffsetBranchVersion(getFilteredInfo(info, prefix, filter), allowedBranches)
+    }
+
+    /**
      * Returns a version in the form {@code $mcVersion-$tag.$offset}, optionally with
      * the branch appended if it is not in the defined list of allowed branches
-     * @param mcVersion The current minecraft version
+     *
      * @param info A git info object generated from {@link #gitInfo}
+     * @param mcVersion The current minecraft version
      * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
      * @return a version in the form {@code $mcVersion-$tag.$offset} or {@code $mcVersion-$tag.$offset-$branch}
      */
@@ -112,5 +152,22 @@ class GradleUtils {
         if (!allowedBranches || allowedBranches.length == 0)
             allowedBranches = [null, 'master', 'main', 'HEAD', mcVersion, mcVersion + '.0', mcVersion + '.x', mcVersion.rsplit('.', 1)[0] + '.x']
         return "$mcVersion-${getTagOffsetBranchVersion(info, allowedBranches)}"
+    }
+
+    /**
+     * Returns a version in the form {@code $mcVersion-$tag.$offset}, optionally with
+     * the branch appended if it is not in the defined list of allowed branches.
+     * The provided filter is used to filter the retrieved tag.
+     *
+     * @param info A git info object generated from {@link #gitInfo}
+     * @param prefix If true, will treat the filter as a prefix.
+     * Defaults to false, which means to treat the filter as a glob pattern.
+     * @param filter A non-null @{code String} filter used when retrieving the tag
+     * @param mcVersion The current minecraft version
+     * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
+     * @return a version in the form {@code $mcVersion-$tag.$offset} or {@code $mcVersion-$tag.$offset-$branch}
+     */
+    static String getFilteredMCTagOffsetBranchVersion(info, boolean prefix = false, String filter, String mcVersion, String... allowedBranches) {
+        return getMCTagOffsetBranchVersion(getFilteredInfo(info, prefix, filter), mcVersion, allowedBranches)
     }
 }
