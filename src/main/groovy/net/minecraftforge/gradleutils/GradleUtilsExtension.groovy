@@ -119,4 +119,25 @@ class GradleUtilsExtension {
     Map<String, String> getGitInfo() {
         return gitInfo.get()
     }
+
+    /**
+     * Get a closure to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
+     * in a publishing block.
+     *
+     * @param defaultFolder The default folder if the required maven information is not currently set
+     * @return a closure
+     */
+    Closure getPublishingForgeMaven(File defaultFolder = project.rootProject.file('repo')) {
+        return GradleUtils.getPublishingForgeMaven(project, defaultFolder)
+    }
+
+    /**
+     * Get a closure for the Forge maven to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
+     * in a repositories block.
+     *
+     * @return a closure
+     */
+    Closure getForgeMaven() {
+        return GradleUtils.getForgeMaven()
+    }
 }

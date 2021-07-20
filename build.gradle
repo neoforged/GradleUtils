@@ -13,6 +13,7 @@ ext {
 
 group 'net.minecraftforge.gradleutils'
 version GradleUtils.getTagOffsetVersion(GIT_INFO)
+println('Version: ' + version)
 
 repositories {
     mavenCentral()
@@ -101,19 +102,6 @@ publishing {
         }
     }
     repositories {
-        maven {
-            if (System.env.MAVEN_USER) {
-                url 'https://maven.minecraftforge.net/'
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
-                }
-            } else {
-                url 'file://' + rootProject.file('repo').getAbsolutePath()
-            }
-        }
+        maven GradleUtils.getPublishingForgeMaven(project)
     }
 }

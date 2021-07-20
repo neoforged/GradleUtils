@@ -24,6 +24,9 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Repository
+import org.gradle.api.Project
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.authentication.http.BasicAuthentication
 
 class GradleUtils {
     static {
@@ -72,6 +75,45 @@ class GradleUtils {
         ret.removeAll {it.value == null }
 
         return ret
+    }
+
+    /**
+     * Get a closure to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
+     * in a publishing block.
+     *
+     * @param project The project
+     * @param defaultFolder The default folder if the required maven information is not currently set
+     * @return a closure
+     */
+    static getPublishingForgeMaven(Project project, File defaultFolder = project.rootProject.file('repo')) {
+        return { MavenArtifactRepository it ->
+            name 'forge'
+            if (System.env.MAVEN_USER) {
+                url 'https://maven.minecraftforge.net/'
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.env.MAVEN_USER ?: 'not'
+                    password = System.env.MAVEN_PASSWORD ?: 'set'
+                }
+            } else {
+                url 'file://' + defaultFolder.getAbsolutePath()
+            }
+        }
+    }
+
+    /**
+     * Get a closure for the Forge maven to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
+     * in a repositories block.
+     *
+     * @return a closure
+     */
+    static getForgeMaven() {
+        return { MavenArtifactRepository it ->
+            name 'forge'
+            url 'https://maven.minecraftforge.net/'
+        }
     }
 
     private static getFilteredInfo(info, boolean prefix, String filter) {
