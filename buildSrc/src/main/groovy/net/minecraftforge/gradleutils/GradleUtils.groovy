@@ -65,6 +65,8 @@ class GradleUtils {
         def ret = [:]
         ret.dir = dir.absolutePath
         ret.tag = desc[0]
+        if (ret.tag.startsWith("v") && ret.tag.length() > 1 && ret.tag.charAt(1).digit)
+            ret.tag = ret.tag.substring(1)
         ret.offset = desc[1]
         ret.hash = desc[2]
         ret.branch = longBranch != null ? Repository.shortenRefName(longBranch) : null
