@@ -55,7 +55,7 @@ class GradleUtilsExtension {
      *
      * @param prefix If true, will treat the filter as a prefix.
      * Defaults to false, which means to treat the filter as a glob pattern.
-     * @param filter A non-null @{code String} filter used when retrieving the tag
+     * @param filter A non-null string filter used when retrieving the tag
      * @return a version in the form {@code $tag.$offset}, e.g. 1.0.5
      */
     String getFilteredTagOffsetVersion(boolean prefix = false, String filter) {
@@ -80,7 +80,7 @@ class GradleUtilsExtension {
      *
      * @param prefix If true, will treat the filter as a prefix.
      * Defaults to false, which means to treat the filter as a glob pattern.
-     * @param filter A non-null @{code String} filter used when retrieving the tag
+     * @param filter A non-null string filter used when retrieving the tag
      * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
      * @return a version in the form {@code $tag.$offset} or {@code $tag.$offset-$branch}
      */
@@ -107,7 +107,7 @@ class GradleUtilsExtension {
      *
      * @param prefix If true, will treat the filter as a prefix.
      * Defaults to false, which means to treat the filter as a glob pattern.
-     * @param filter A non-null @{code String} filter used when retrieving the tag
+     * @param filter A non-null string filter used when retrieving the tag
      * @param mcVersion The current minecraft version
      * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
      * @return a version in the form {@code $mcVersion-$tag.$offset} or {@code $mcVersion-$tag.$offset-$branch}
