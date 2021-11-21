@@ -1,4 +1,6 @@
+import net.minecraftforge.gradleutils.ChangelogUtils
 import net.minecraftforge.gradleutils.GradleUtils
+import net.minecraftforge.gradleutils.tasks.GenerateChangelogTask
 
 plugins {
     id 'java-gradle-plugin'
@@ -28,6 +30,7 @@ task copyGradleUtils(type: Copy) {
     into 'src/main/groovy'
     from('buildSrc/src/main/groovy') {
         include '**/*.groovy'
+        include '**/*.java'
     }
 }
 
@@ -61,6 +64,8 @@ gradlePlugin {
         }
     }
 }
+
+ChangelogUtils.setupChangelogGeneration(project);
 
 publishing {
     publications {
