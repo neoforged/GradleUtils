@@ -19,7 +19,7 @@ java {
     }
 }
 
-group 'net.minecraftforge.gradleutils'
+group 'net.minecraftforge.gradleutils' //Test
 version GradleUtils.getTagOffsetVersion(GIT_INFO)
 println('Version: ' + version)
 
