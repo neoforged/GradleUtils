@@ -1,6 +1,5 @@
 import jetbrains.buildServer.configs.kotlin.v2019_2.*
 import jetbrains.buildServer.configs.kotlin.v2019_2.projectFeatures.githubIssues
-import jetbrains.buildServer.configs.kotlin.v2019_2.triggers.vcs
 
 /*
 The settings script is an entry point for defining a TeamCity
@@ -48,12 +47,6 @@ project {
 object Build : BuildType({
     templates(AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_GradleBuild"), AbsoluteId("MinecraftForge_BuildMainBranches"))
     name = "Build"
-
-    triggers {
-        vcs {
-            id = "TRIGGER_4"
-        }
-    }
 })
 
 object PullRequests_1 : BuildType({
