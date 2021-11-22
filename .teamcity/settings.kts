@@ -47,6 +47,17 @@ project {
 object Build : BuildType({
     templates(AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_GradleBuild"), AbsoluteId("MinecraftForge_BuildMainBranches"))
     name = "Build"
+
+    steps {
+        step {
+            name = "Build"
+            id = "RUNNER_2"
+            type = "MinecraftForge_ExecuteGradleTask"
+            executionMode = BuildStep.ExecutionMode.DEFAULT
+            param("gradle_tasks", "%gradle_build_task%")
+            param("additional_gradle_parameters", "--refresh-dependencies --continue -x %gradle_test_task%")
+        }
+    }
 })
 
 object PullRequests_1 : BuildType({
