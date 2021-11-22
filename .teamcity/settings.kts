@@ -1,5 +1,6 @@
 import jetbrains.buildServer.configs.kotlin.v2019_2.*
 import jetbrains.buildServer.configs.kotlin.v2019_2.projectFeatures.githubIssues
+import jetbrains.buildServer.configs.kotlin.v2019_2.vcs.GitVcsRoot
 
 /*
 The settings script is an entry point for defining a TeamCity
@@ -26,6 +27,8 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 version = "2021.2"
 
 project {
+
+    vcsRoot(HttpsGithubComMinecraftForgeGradleUtilsGit)
 
     buildType(Build)
     buildType(PullRequests_1)
@@ -54,4 +57,10 @@ object PullRequests_1 : BuildType({
     id("PullRequests")
     name = "Pull Requests"
     description = "Builds pull requests for the project"
+})
+
+object HttpsGithubComMinecraftForgeGradleUtilsGit : GitVcsRoot({
+    name = "https://github.com/MinecraftForge/GradleUtils.git"
+    url = "https://github.com/MinecraftForge/GradleUtils.git"
+    branch = "refs/heads/main"
 })
