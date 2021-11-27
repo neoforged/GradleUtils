@@ -27,17 +27,17 @@ version = "2021.2"
 
 project {
 
+    buildType(PullRequests)
     buildType(Build)
-    buildType(PullRequests_1)
 
     params {
-        param("git_main_branch", "main")
-        param("github_repository_name", "GradleUtils")
+        text("git_main_branch", "main", label = "Git Main Branch", description = "The git main or default branch to use in VCS operations.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
+        text("github_repository_name", "GradleUtils", label = "The github repository name. Used to connect to it in VCS Roots.", description = "This is the repository slug on github. So for example `GradleUtils` or `MinecraftForge`. It is interpolated into the global VCS Roots.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
     }
 
     features {
         githubIssues {
-            id = "PROJECT_EXT_4"
+            id = "GradleUtils__IssueTracker"
             displayName = "MinecraftForge/GradleUtils"
             repositoryURL = "https://github.com/MinecraftForge/GradleUtils"
         }
@@ -45,24 +45,15 @@ project {
 }
 
 object Build : BuildType({
-    templates(AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_GradleBuild"), AbsoluteId("MinecraftForge_BuildMainBranches"))
+    templates(AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildMainBranches"), AbsoluteId("MinecraftForge_BuildUsingGradle"), AbsoluteId("MinecraftForge_PublishProjectUsingGradle"))
+    id("GradleUtils__Build")
     name = "Build"
-
-    steps {
-        step {
-            name = "Build"
-            id = "RUNNER_2"
-            type = "MinecraftForge_ExecuteGradleTask"
-            executionMode = BuildStep.ExecutionMode.DEFAULT
-            param("gradle_tasks", "%gradle_build_task%")
-            param("additional_gradle_parameters", "--refresh-dependencies --continue -x %gradle_test_task%")
-        }
-    }
+    description = "Builds and Publishes the main branches of the project."
 })
 
-object PullRequests_1 : BuildType({
-    templates(AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildPullRequests"), AbsoluteId("MinecraftForge_GradleBuild"))
-    id("PullRequests")
+object PullRequests : BuildType({
+    templates(AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildPullRequests"), AbsoluteId("MinecraftForge_BuildUsingGradle"))
+    id("GradleUtils__PullRequests")
     name = "Pull Requests"
     description = "Builds pull requests for the project"
 })
