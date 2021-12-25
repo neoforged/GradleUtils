@@ -84,24 +84,68 @@ class GradleUtils {
      * Get a closure to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
      * in a publishing block.
      *
+     * Important the following environment variables must be set for this to work:
+     *  - MAVEN_USER: Containing the username to use for authentication
+     *  - MAVEN_PASSWORD: Containing the password to use for authentication
+     *  - MAVEN_URL_RELEASE: Containing the URL to use for the release repository
+     *  - MAVEN_URL_SNAPSHOT: Containing the URL to use for the snapshot repository
+     *
      * @param project The project
      * @param defaultFolder The default folder if the required maven information is not currently set
      * @return a closure
      */
     static getPublishingForgeMaven(Project project, File defaultFolder = project.rootProject.file('repo')) {
+        return setupSnapshotCompatiblePublishing(project, 'https://maven.minecraftforge.net/', defaultFolder)
+    }
+
+    /**
+     * Get a closure to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
+     * in a publishing block, this closure respects the current project's version, with regards to publishing to a release
+     * or snapshot repository.
+     *
+     * Important the following environment variables must be set for this to work:
+     *  - MAVEN_USER: Containing the username to use for authentication
+     *  - MAVEN_PASSWORD: Containing the password to use for authentication
+     *
+     * The following environment variables are optional:
+     *  - MAVEN_URL_RELEASE: Containing the URL to use for the release repository
+     *  - MAVEN_URL_SNAPSHOT: Containing the URL to use for the snapshot repository
+     *
+     * If the MAVEN_URL_RELEASE is not set the passed in fallback URL will be used for the release repository.
+     * By default this is: https://maven.minecraftforge.net/
+     * This is done to preserve backwards compatibility with the old {@link #getPublishingForgeMaven(Project, File)} method.
+     *
+     * @param project The project
+     * @param defaultFolder The default folder if the required maven information is not currently set
+     * @return a closure
+     */
+    static setupSnapshotCompatiblePublishing(Project project, String fallbackPublishingEndpoint = 'https://maven.minecraftforge.net/', File defaultFolder = project.rootProject.file('repo'), File defaultSnapshotFolder = project.rootProject.file('snapshots')) {
         return { MavenArtifactRepository it ->
             name 'forge'
-            if (System.env.MAVEN_USER) {
-                url 'https://maven.minecraftforge.net/'
+            if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
+                def publishingEndpoint = fallbackPublishingEndpoint
+                if (System.env.MAVEN_URL_RELEASE) {
+                    publishingEndpoint = System.env.MAVEN_URL_RELEASE
+                }
+
+                if (project.version.toString().endsWith("-SNAPSHOT") && System.env.MAVEN_URL_SNAPSHOTS) {
+                    url System.env.MAVEN_URL_SNAPSHOTS
+                } else {
+                    url publishingEndpoint
+                }
                 authentication {
                     basic(BasicAuthentication)
                 }
                 credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
+                    username = System.env.MAVEN_USER
+                    password = System.env.MAVEN_PASSWORD
                 }
             } else {
-                url 'file://' + defaultFolder.getAbsolutePath()
+                if (project.version.toString().endsWith("-SNAPSHOT")) {
+                    url 'file://' + defaultSnapshotFolder.getAbsolutePath()
+                } else {
+                    url 'file://' + defaultFolder.getAbsolutePath()
+                }
             }
         }
     }
@@ -116,6 +160,32 @@ class GradleUtils {
         return { MavenArtifactRepository it ->
             name 'forge'
             url 'https://maven.minecraftforge.net/'
+        }
+    }
+
+    /**
+     * Get a closure for the Forge maven to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
+     * in a repositories block.
+     *
+     * @return a closure
+     */
+    static getForgeReleaseMaven() {
+        return { MavenArtifactRepository it ->
+            name 'forge-releases'
+            url 'https://maven.minecraftforge.net/releases'
+        }
+    }
+
+    /**
+     * Get a closure for the Forge maven to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
+     * in a repositories block.
+     *
+     * @return a closure
+     */
+    static getForgeSnapshotMaven() {
+        return { MavenArtifactRepository it ->
+            name 'forge-snapshots'
+            url 'https://maven.minecraftforge.net/snapshots'
         }
     }
 
@@ -234,7 +304,7 @@ class GradleUtils {
      * @return The github url of the project.
      */
     static String buildProjectUrl(String organisation, String project) {
-        return "https://github.com/$organisation/$project";
+        return "https://github.com/$organisation/$project"
     }
 
     /**
@@ -251,37 +321,37 @@ class GradleUtils {
      * @return
      */
     static String buildProjectUrl(final File projectDir) {
-        Git git = Git.open(projectDir); //Create a git workspace.
+        Git git = Git.open(projectDir) //Create a git workspace.
 
-        def remotes = git.remoteList().call(); //Get all remotes.
+        def remotes = git.remoteList().call() //Get all remotes.
         if (remotes.size() == 0)
-            throw new IllegalStateException("No remotes found in " + projectDir);
+            throw new IllegalStateException("No remotes found in " + projectDir)
 
         //Get the origin remote.
         def originRemote = remotes.toList().stream()
             .filter(r -> r.getName().equals("origin"))
             .findFirst()
-            .orElse(null);
+            .orElse(null)
 
         //We do not have an origin named remote
         if (originRemote == null)
         {
-            return "";
+            return ""
         }
 
         //Get the origin push url.
         def originUrl = originRemote.getURIs().toList().stream()
             .findFirst()
-            .orElse(null);
+            .orElse(null)
 
         //We do not have a origin url
         if (originUrl == null)
         {
-            return "";
+            return ""
         }
 
         //Grab its string representation and process.
-        def originUrlString = originUrl.toString();
+        def originUrlString = originUrl.toString()
         //Determine the protocol
         if (originUrlString.startsWith("ssh")) {
             //If ssh then check for authentication data.
@@ -291,7 +361,7 @@ class GradleUtils {
             } else
             {
                 //No authentication data: Switch to https.
-                return "https://" + originUrlString.substring(6).replace(".git", "");
+                return "https://" + originUrlString.substring(6).replace(".git", "")
             }
         } else if (originUrlString.startsWith("http")) {
             //Standard http protocol: Strip the ".git" ending only.
@@ -299,6 +369,36 @@ class GradleUtils {
         }
 
         //What other case exists? Just to be sure lets return this.
-        return originUrlString;
+        return originUrlString
+    }
+
+    /**
+     * Configures CI related tasks for all known platforms.
+     *
+     * @param project The project to configure them on.
+     */
+    static void setupCITasks(Project project) {
+        //Future proofing.
+        //For now we only support the TeamCity environment
+        setupTeamCityTasks(project)
+    }
+
+    /**
+     * Sets up the TeamCity CI tasks.
+     *
+     * @param project The project to configure it on.
+     */
+    private static void setupTeamCityTasks(Project project) {
+        if (System.env.TEAMCITY_VERSION) {
+            //Only setup the CI environment if and only if the environment variables are set.
+            def teamCityCITask = project.tasks.register("configureTeamCity") {
+                //Print the marker lines into the log which configure the pipeline.
+                doLast {
+                    project.getLogger().lifecycle("Setting project variables and parameters.")
+                    println "##teamcity[buildNumber '${project.version}']"
+                    println "##teamcity[setParameter name='env.PUBLISHED_JAVA_ARTIFACT_VERSION' value='${project.version}']"
+                }
+            }
+        }
     }
 }
