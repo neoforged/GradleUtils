@@ -338,10 +338,8 @@ class ChangelogUtils {
     private static Map<String, String> getCommitToTagMap(final Git git) {
         final Map<String, String> versionMap = new HashMap<>();
         for(Ref tag : git.tagList().call()) {
-            if (tag.peeledObjectId != null)
-                versionMap.put(tag.getPeeledObjectId().name(), tag.getName().replace(Constants.R_TAGS, ""))
-            else if (tag.name.startsWith(Constants.R_TAGS) && tag.objectId != null)
-                versionMap.put(tag.getObjectId().name(), tag.getName().replace(Constants.R_TAGS, ""))
+            ObjectId tagId = git.getRepository().getRefDatabase().peel(tag).peeledObjectId ?: tag.objectId;
+            versionMap.put(tagId.name(), tag.getName().replace(Constants.R_TAGS, ""))
         }
 
         return versionMap;
@@ -356,10 +354,8 @@ class ChangelogUtils {
     private static Map<String, String> getTagToCommitMap(final Git git) {
         final Map<String, String> versionMap = new HashMap<>();
         for(Ref tag : git.tagList().call()) {
-            if (tag.peeledObjectId != null)
-                versionMap.put(tag.getName().replace(Constants.R_TAGS, ""), tag.getPeeledObjectId().name())
-            else if (tag.name.startsWith(Constants.R_TAGS) && tag.objectId != null)
-                versionMap.put(tag.getName().replace(Constants.R_TAGS, ""), tag.getObjectId().name())
+            ObjectId tagId = git.getRepository().getRefDatabase().peel(tag).peeledObjectId ?: tag.objectId;
+            versionMap.put(tag.getName().replace(Constants.R_TAGS, ""), tagId.name());
         }
 
         return versionMap;
