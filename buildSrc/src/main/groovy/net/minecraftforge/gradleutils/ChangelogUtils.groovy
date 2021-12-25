@@ -340,6 +340,8 @@ class ChangelogUtils {
         for(Ref tag : git.tagList().call()) {
             if (tag.peeledObjectId != null)
                 versionMap.put(tag.getPeeledObjectId().name(), tag.getName().replace(Constants.R_TAGS, ""))
+            else if (tag.name.startsWith(Constants.R_TAGS) && tag.objectId != null)
+                versionMap.put(tag.getObjectId().name(), tag.getName().replace(Constants.R_TAGS, ""))
         }
 
         return versionMap;
@@ -356,6 +358,8 @@ class ChangelogUtils {
         for(Ref tag : git.tagList().call()) {
             if (tag.peeledObjectId != null)
                 versionMap.put(tag.getName().replace(Constants.R_TAGS, ""), tag.getPeeledObjectId().name())
+            else if (tag.name.startsWith(Constants.R_TAGS) && tag.objectId != null)
+                versionMap.put(tag.getName().replace(Constants.R_TAGS, ""), tag.getObjectId().name())
         }
 
         return versionMap;
