@@ -23,6 +23,7 @@ package net.minecraftforge.gradleutils.tasks;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.publish.PublishingExtension;
@@ -46,7 +47,6 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
     public ExtractTeamCityProjectConfigurationTask()
     {
         getDestination().convention(getProject().getRootProject().getLayout().getProjectDirectory().dir(getProject().provider(() -> "./")));
-        getRequiresCleanWorkspace().convention(true);
 
         setGroup("publishing");
         setDescription("Creates (or recreates) a default TeamCity project configuration directory for use with the MinecraftForge TeamCity server.");
@@ -56,9 +56,6 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
     @PathSensitive(PathSensitivity.NONE)
     public abstract DirectoryProperty getDestination();
 
-    @Input
-    public abstract Property<Boolean> getRequiresCleanWorkspace();
-
     @TaskAction
     public void run() throws Exception
     {
@@ -66,13 +63,6 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
         final File destDir = getDestination().getAsFile().get();
         //Grab the target directory, to check if it exists.
         final File teamcityDir = new File(destDir, ".teamcity");
-
-        //If requested validate that the repository is clean.
-        if (getRequiresCleanWorkspace().get())
-        {
-            //Check it.
-            checkForCleanWorkspace(destDir);
-        }
 
         //Export the zip file from our resources.
         String fileZip = exportResource();
@@ -232,33 +222,56 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
     }
 
     private String determineArtifactId(String projectId) {
-        return getProject().getExtensions().getByType(PublishingExtension.class)
-                 .getPublications()
-                 .stream()
-                 .filter(MavenPublication.class::isInstance)
-                 .map(MavenPublication.class::cast)
-                 .filter(publication -> !publication.getName().contains("PluginMarker")) //Exclude gradles plugin markers!
-                 .findFirst()
-                 .map(MavenPublication::getArtifactId)
-                 .orElseGet(() -> {
-                     getProject().getLogger().warn("Could not find the Maven artifact Id from normal publication falling back to the lower cased project name.");
-                     return projectId.toLowerCase();
-                 });
+        if (getProject().getExtensions().findByType(PublishingExtension.class) == null) {
+            getProject().getLogger().warn("Could not find the Maven publication extension, falling back to the lower cased project name.");
+            return projectId.toLowerCase();
+        }
+
+        try {
+            return getProject().getExtensions().getByType(PublishingExtension.class)
+              .getPublications()
+              .stream()
+              .filter(MavenPublication.class::isInstance)
+              .map(MavenPublication.class::cast)
+              .filter(publication -> !publication.getName().contains("PluginMarker")) //Exclude gradles plugin markers!
+              .findFirst()
+              .map(MavenPublication::getArtifactId)
+              .orElseGet(() -> {
+                  getProject().getLogger().warn("Could not find the Maven artifact Id from normal publication falling back to the lower cased project name.");
+                  return projectId.toLowerCase();
+              });
+        }
+        catch (UnknownDomainObjectException unknownDomainObjectException) {
+            getProject().getLogger().warn("Could not find the Maven publication extension, falling back to the lower cased project name.");
+            return projectId.toLowerCase();
+        }
+
     }
 
     private String determineGroup(String fallback) {
-        return getProject().getExtensions().getByType(PublishingExtension.class)
-          .getPublications()
-          .stream()
-          .filter(MavenPublication.class::isInstance)
-          .map(MavenPublication.class::cast)
-          .filter(publication -> !publication.getName().contains("PluginMarker")) //Exclude gradles plugin markers!
-          .findFirst()
-          .map(MavenPublication::getGroupId)
-          .orElseGet(() -> {
-              getProject().getLogger().warn("Could not find the Maven artifact Id from normal publication falling back to the lower cased project group.");
-              return fallback.toLowerCase();
-          });
+        if (getProject().getExtensions().findByType(PublishingExtension.class) == null) {
+            getProject().getLogger().warn("Could not find the Maven publication extension, falling back to the lower cased project group.");
+            return fallback.toLowerCase();
+        }
+
+        try {
+            return getProject().getExtensions().getByType(PublishingExtension.class)
+              .getPublications()
+              .stream()
+              .filter(MavenPublication.class::isInstance)
+              .map(MavenPublication.class::cast)
+              .filter(publication -> !publication.getName().contains("PluginMarker")) //Exclude gradles plugin markers!
+              .findFirst()
+              .map(MavenPublication::getGroupId)
+              .orElseGet(() -> {
+                  getProject().getLogger().warn("Could not find the Maven artifact Id from normal publication falling back to the lower cased project group.");
+                  return fallback.toLowerCase();
+              });
+        }
+        catch (UnknownDomainObjectException unknownDomainObjectException) {
+            getProject().getLogger().warn("Could not find the Maven publication extension, falling back to the lower cased project group.");
+            return fallback.toLowerCase();
+        }
     }
 
     /**
@@ -290,19 +303,5 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
 
         final String[] pathMembers = repositoryPath.split("/");
         return pathMembers[pathMembers.length - 2];
-    }
-
-    /**
-     * Checks if the workspace of the current project is clean or has pending changes.
-     * Throws an exception if that is not the case.
-     *
-     * @param projectDir The project directory to check.
-     */
-    private static void checkForCleanWorkspace(final File projectDir) throws Exception {
-        final Git git = Git.open(projectDir);
-        final Status status = git.status().call();
-        if (!status.isClean()) {
-            throw new Exception("Workspace is not clean. Please commit your changes and try again.");
-        }
     }
 }

@@ -27,8 +27,9 @@ version = "2021.2"
 
 project {
 
-    buildType(PullRequests)
     buildType(Build)
+    buildType(BuildSecondaryBranches)
+    buildType(PullRequests)
 
     params {
         text("git_main_branch", "main", label = "Git Main Branch", description = "The git main or default branch to use in VCS operations.", display = ParameterDisplay.HIDDEN, allowEmpty = false)
@@ -53,6 +54,13 @@ object Build : BuildType({
     id("GradleUtils__Build")
     name = "Build"
     description = "Builds and Publishes the main branches of the project."
+})
+
+object BuildSecondaryBranches : BuildType({
+    templates(AbsoluteId("MinecraftForge_ExcludesBuildingDefaultBranch"), AbsoluteId("MinecraftForge_SetupGradleUtilsCiEnvironmen"), AbsoluteId("MinecraftForge_BuildWithDiscordNotifications"), AbsoluteId("MinecraftForge_BuildMainBranches"), AbsoluteId("MinecraftForge_BuildUsingGradle"))
+    id("GradleUtils__BuildSecondaryBranches")
+    name = "Build - Secondary Branches"
+    description = "Builds and Publishes the secondary branches of the project."
 })
 
 object PullRequests : BuildType({
