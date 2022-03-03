@@ -28,18 +28,15 @@ import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Ref
 import org.eclipse.jgit.revwalk.RevCommit
-import org.eclipse.jgit.revwalk.RevSort
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.revwalk.filter.RevFilter
 import org.gradle.api.Action
 import org.gradle.api.InvalidUserCodeException
 import org.gradle.api.Project
-import org.gradle.api.publish.Publication
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenArtifact
 import org.gradle.api.publish.maven.MavenPublication
 
-import java.util.function.Consumer
 import java.util.function.Function
 import java.util.regex.Pattern
 
@@ -632,27 +629,23 @@ class ChangelogUtils {
      * @param project The project to add changelog generation publishing to.
      */
     private static void setupChangelogGenerationOnAllPublishTasks(final Project project) {
-        project.getAllprojects().forEach {innerProject -> {
-            if (innerProject.getExtensions().findByName("publishing") == null)
-                return;
+        project.gradle.projectsEvaluated {
+            project.getAllprojects().forEach { innerProject ->
+                if (innerProject.getExtensions().findByName("publishing") == null)
+                    return
 
-            //Grab the extension.
-            final PublishingExtension publishingExtension = innerProject.getExtensions().getByName("publishing") as PublishingExtension
-            //Get each extension and add the publishing task as a publishing artifact.
-            publishingExtension.getPublications().all(new Action<Publication>() {
-                @Override
-                void execute(final Publication publication) {
-                    if (publication instanceof MavenPublication)
-                    {
+                //Grab the extension.
+                final PublishingExtension publishingExtension = innerProject.getExtensions().getByName("publishing") as PublishingExtension
+                //Get each extension and add the publishing task as a publishing artifact.
+                publishingExtension.getPublications().all { publication ->
+                    if (publication instanceof MavenPublication) {
                         //Add the task as a publishing artifact.
                         //noinspection UnnecessaryQualifiedReference -> Class cast exception else!
-                        ChangelogUtils.setupChangelogGenerationForPublishing(innerProject, publication as MavenPublication);
+                        ChangelogUtils.setupChangelogGenerationForPublishing(innerProject, publication as MavenPublication)
                     }
                 }
-            })
-        }}
-
-
+            }
+        }
     }
 
     /**
