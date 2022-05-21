@@ -35,15 +35,18 @@ public class ChangelogGenerationExtension
     public ChangelogGenerationExtension(final Project project) {this.project = project;}
 
     public void fromMergeBase() {
-        project.afterEvaluate(project -> ChangelogUtils.setupChangelogGeneration(project, registerAllPublications));
+        ChangelogUtils.setupChangelogGeneration(project);
+        project.afterEvaluate(this::afterEvaluate);
     }
 
     public void fromTag(final String tag) {
-        project.afterEvaluate(project -> ChangelogUtils.setupChangelogGenerationFromTag(project, tag, registerAllPublications));
+        ChangelogUtils.setupChangelogGenerationFromTag(project, tag);
+        project.afterEvaluate(this::afterEvaluate);
     }
 
     public void fromCommit(final String commit) {
-        project.afterEvaluate(project -> ChangelogUtils.setupChangelogGenerationFromCommit(project, commit, registerAllPublications));
+        ChangelogUtils.setupChangelogGenerationFromCommit(project, commit);
+        project.afterEvaluate(this::afterEvaluate);
     }
 
     public void disableAutomaticPublicationRegistration() {
@@ -52,5 +55,10 @@ public class ChangelogGenerationExtension
 
     public void publish(final MavenPublication mavenPublication) {
         ChangelogUtils.setupChangelogGenerationForPublishing(project, mavenPublication);
+    }
+
+    private void afterEvaluate(final Project project) {
+        if (registerAllPublications)
+            ChangelogUtils.setupChangelogGenerationOnAllPublishTasks(project);
     }
 }
