@@ -94,15 +94,15 @@ publishing {
             pom {
                 name = 'Gradle Utils'
                 description = 'Used by MinecraftForge projects as a util library for Gradle buildscripts'
-                url = 'https://github.com/MinecraftForge/GradleUtils'
+                url = 'https://github.com/NeoForged/GradleUtils'
                 scm {
-                    url = 'https://github.com/MinecraftForge/GradleUtils'
-                    connection = 'scm:git:git://github.com/MinecraftForge/GradleUtils.git'
-                    developerConnection = 'scm:git:git@github.com:MinecraftForge/GradleUtils.git'
+                    url = 'https://github.com/NeoForged/GradleUtils'
+                    connection = 'scm:git:git://github.com/NeoForged/GradleUtils.git'
+                    developerConnection = 'scm:git:git@github.com:NeoForged/GradleUtils.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/MinecraftForge/GradleUtils/issues'
+                    url = 'https://github.com/NeoForged/GradleUtils/issues'
                 }
 
                 licenses {
@@ -120,6 +120,10 @@ publishing {
                     developer {
                         id = 'SizableShrimp'
                         name = 'SizableShrimp'
+                    }
+                    developer {
+                        id = 'marchermans'
+                        name = 'Orion'
                     }
                 }
             }

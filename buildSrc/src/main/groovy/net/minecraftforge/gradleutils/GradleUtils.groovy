@@ -95,7 +95,7 @@ class GradleUtils {
      * @return a closure
      */
     static getPublishingForgeMaven(Project project, File defaultFolder = project.rootProject.file('repo')) {
-        return setupSnapshotCompatiblePublishing(project, 'https://maven.minecraftforge.net/', defaultFolder)
+        return setupSnapshotCompatiblePublishing(project, 'https://maven.neoforged.net/snapshots', defaultFolder)
     }
 
     /**
@@ -112,14 +112,14 @@ class GradleUtils {
      *  - MAVEN_URL_SNAPSHOT: Containing the URL to use for the snapshot repository
      *
      * If the MAVEN_URL_RELEASE is not set the passed in fallback URL will be used for the release repository.
-     * By default this is: https://maven.minecraftforge.net/
+     * By default this is: https://maven.neoforged.net/releases
      * This is done to preserve backwards compatibility with the old {@link #getPublishingForgeMaven(Project, File)} method.
      *
      * @param project The project
      * @param defaultFolder The default folder if the required maven information is not currently set
      * @return a closure
      */
-    static setupSnapshotCompatiblePublishing(Project project, String fallbackPublishingEndpoint = 'https://maven.minecraftforge.net/', File defaultFolder = project.rootProject.file('repo'), File defaultSnapshotFolder = project.rootProject.file('snapshots')) {
+    static setupSnapshotCompatiblePublishing(Project project, String fallbackPublishingEndpoint = 'https://maven.neoforged.net/snapshots', File defaultFolder = project.rootProject.file('repo'), File defaultSnapshotFolder = project.rootProject.file('snapshots')) {
         return { MavenArtifactRepository it ->
             name 'forge'
             if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
@@ -159,7 +159,7 @@ class GradleUtils {
     static getForgeMaven() {
         return { MavenArtifactRepository it ->
             name 'forge'
-            url 'https://maven.minecraftforge.net/'
+            url 'https://maven.neoforged.net/releases'
         }
     }
 
@@ -172,7 +172,7 @@ class GradleUtils {
     static getForgeReleaseMaven() {
         return { MavenArtifactRepository it ->
             name 'forge-releases'
-            url 'https://maven.minecraftforge.net/releases'
+            url 'https://maven.neoforged.net/releases'
         }
     }
 
@@ -185,7 +185,7 @@ class GradleUtils {
     static getForgeSnapshotMaven() {
         return { MavenArtifactRepository it ->
             name 'forge-snapshots'
-            url 'https://maven.minecraftforge.net/snapshots'
+            url 'https://maven.neoforged.net/snapshots'
         }
     }
 
@@ -293,7 +293,7 @@ class GradleUtils {
      * @return The github url of the project.
      */
     static String buildProjectUrl(String project) {
-        return buildProjectUrl("MinecraftForge", project)
+        return buildProjectUrl("NeoForged", project)
     }
 
     /**
