@@ -95,7 +95,7 @@ class GradleUtils {
      * @return a closure
      */
     static getPublishingForgeMaven(Project project, File defaultFolder = project.rootProject.file('repo')) {
-        return setupSnapshotCompatiblePublishing(project, 'https://maven.neoforged.net/snapshots', defaultFolder)
+        return setupSnapshotCompatiblePublishing(project, 'https://maven.neoforged.net/releases', defaultFolder)
     }
 
     /**
@@ -119,7 +119,7 @@ class GradleUtils {
      * @param defaultFolder The default folder if the required maven information is not currently set
      * @return a closure
      */
-    static setupSnapshotCompatiblePublishing(Project project, String fallbackPublishingEndpoint = 'https://maven.neoforged.net/snapshots', File defaultFolder = project.rootProject.file('repo'), File defaultSnapshotFolder = project.rootProject.file('snapshots')) {
+    static setupSnapshotCompatiblePublishing(Project project, String fallbackPublishingEndpoint = 'https://maven.neoforged.net/releases', File defaultFolder = project.rootProject.file('repo'), File defaultSnapshotFolder = project.rootProject.file('snapshots')) {
         return { MavenArtifactRepository it ->
             name 'forge'
             if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
