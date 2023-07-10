@@ -49,7 +49,7 @@ public abstract class GenerateChangelogTask extends DefaultTask
         super();
 
         //Setup defaults: Using merge-base based text changelog generation of the local project into build/changelog.txt
-        getGitDirectory().convention(getProject().getLayout().getProjectDirectory().dir(".git"));
+        getGitDirectory().fileValue(GradleUtils.getGitDirectory(getProject().getProjectDir()));
         getBuildMarkdown().convention(false);
         getOutputFile().convention(getProject().getLayout().getBuildDirectory().file("changelog.txt"));
         getStartingCommit().convention("");

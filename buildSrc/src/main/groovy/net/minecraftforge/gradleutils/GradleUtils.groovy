@@ -416,4 +416,17 @@ class GradleUtils {
             }
         }
     }
+
+    static File getGitDirectory(File projectDir, Throwable lastException = null) {
+        try {
+            Git.open(projectDir);
+            return new File(projectDir, ".git");
+        } catch (IOException ignored) {
+            if (projectDir.getParentFile() != null) {
+                return getGitDirectory(projectDir.getParentFile(), lastException == null ? new IllegalArgumentException("Could not find git directory in or above: " + projectDir.getAbsolutePath()) : lastException)
+            } else {
+                throw lastException
+            }
+        }
+    }
 }
