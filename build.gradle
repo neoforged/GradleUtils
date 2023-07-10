@@ -20,9 +20,8 @@ java {
     }
 }
 
-group 'net.minecraftforge.gradleutils' //Test
+group 'net.neoforged.gradleutils'
 version GradleUtils.getTagOffsetVersion(GIT_INFO)
-println('Version: ' + version)
 
 repositories {
     mavenCentral()
@@ -76,7 +75,7 @@ license {
 gradlePlugin {
     plugins {
         gradleutils {
-            id = 'net.minecraftforge.gradleutils'
+            id = 'net.neoforged.gradleutils'
             implementationClass = 'net.minecraftforge.gradleutils.GradleUtilsPlugin'
         }
     }
