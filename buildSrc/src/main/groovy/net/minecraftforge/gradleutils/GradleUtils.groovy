@@ -47,7 +47,7 @@ class GradleUtils {
     static gitInfo(File dir, String... globFilters) {
         def git
         try {
-            git = Git.open(dir)
+            git = openGit(dir)
         } catch (RepositoryNotFoundException e) {
             return [
                     tag: '0.0',
@@ -189,6 +189,9 @@ class GradleUtils {
         }
     }
 
+    /**
+     *
+     */
     private static getFilteredInfo(info, boolean prefix, String filter) {
         if (prefix)
             filter += '**'
@@ -321,7 +324,7 @@ class GradleUtils {
      * @return
      */
     static String buildProjectUrl(final File projectDir) {
-        Git git = Git.open(projectDir) //Create a git workspace.
+        Git git = openGit(projectDir) //Create a git workspace.
 
         def remotes = git.remoteList().call() //Get all remotes.
         if (remotes.size() == 0)
@@ -398,6 +401,18 @@ class GradleUtils {
                     println "##teamcity[buildNumber '${project.version}']"
                     println "##teamcity[setParameter name='env.PUBLISHED_JAVA_ARTIFACT_VERSION' value='${project.version}']"
                 }
+            }
+        }
+    }
+
+    static Git openGit(File projectDir, Throwable lastException = null) {
+        try {
+            return Git.open(projectDir)
+        } catch (IOException e) {
+            if (projectDir.getParentFile() != null) {
+                return openGit(projectDir.getParentFile(), lastException == null ? e : lastException)
+            } else {
+                throw lastException
             }
         }
     }
