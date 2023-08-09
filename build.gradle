@@ -22,15 +22,6 @@ dependencies {
     implementation 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
 }
 
-task copyGradleUtilsGroovy(type: Copy) {
-    outputs.upToDateWhen { false }
-    into 'src/main/groovy'
-    from('buildSrc/src/main/groovy') {
-        include '**/*.groovy'
-        include '**/*.java'
-    }
-}
-
 task copyGradleUtilsResources(type: Copy) {
     outputs.upToDateWhen { false }
     into 'src/main/resources'
@@ -41,8 +32,6 @@ task copyGradleUtilsResources(type: Copy) {
 
 compileGroovy.dependsOn(copyGradleUtilsResources)
 checkLicenseMain.dependsOn(copyGradleUtilsResources)
-compileGroovy.dependsOn(copyGradleUtilsGroovy)
-checkLicenseMain.dependsOn(copyGradleUtilsGroovy)
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     archiveClassifier = 'sources'
