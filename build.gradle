@@ -42,6 +42,13 @@ license {
     skipExistingHeaders = true // Ignore existing license headers on files
 }
 
+// Disable the license tasks for the TeamCity template files
+['checkLicenseTeamcityTemplate', 'updateLicenseTeamcityTemplate'].each {
+    tasks.named(it) {
+        enabled = false
+    }
+}
+
 gradlePlugin {
     plugins {
         gradleutils {
