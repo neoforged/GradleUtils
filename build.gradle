@@ -1,17 +1,8 @@
-import net.minecraftforge.gradleutils.ChangelogUtils
-import net.minecraftforge.gradleutils.GradleUtils
-import net.minecraftforge.gradleutils.tasks.ExtractTeamCityProjectConfigurationTask
-import net.minecraftforge.gradleutils.tasks.GenerateChangelogTask
-
 plugins {
     id 'java-gradle-plugin'
     id 'groovy'
     id 'maven-publish'
     id 'org.cadixdev.licenser' version '0.6.1'
-}
-
-ext {
-    GIT_INFO = GradleUtils.gitInfo(file('.'))
 }
 
 java {
@@ -81,14 +72,10 @@ gradlePlugin {
     }
 }
 
-ChangelogUtils.setupChangelogGenerationFromTag(project, '1.0')
-
 publishing {
     publications {
         pluginMaven(MavenPublication) { mavenPublication ->
             artifact sourcesJar
-
-            ChangelogUtils.setupChangelogGenerationForPublishing(project, mavenPublication)
 
             pom {
                 name = 'Gradle Utils'
@@ -129,11 +116,26 @@ publishing {
         }
     }
     repositories {
-        maven GradleUtils.getPublishingForgeMaven(project)
+        maven {
+            name 'forge'
+            if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
+                def publishingEndpoint = System.env.MAVEN_URL_RELEASE ?: 'https://maven.neoforged.net/releases'
+
+                if (project.version.toString().endsWith("-SNAPSHOT") && System.env.MAVEN_URL_SNAPSHOTS) {
+                    url System.env.MAVEN_URL_SNAPSHOTS
+                } else {
+                    url publishingEndpoint
+                }
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.env.MAVEN_USER
+                    password = System.env.MAVEN_PASSWORD
+                }
+            } else {
+                url 'repo'
+            }
+        }
     }
 }
-
-task setupTeamCityProject(type: ExtractTeamCityProjectConfigurationTask) {
-}
-
-GradleUtils.setupCITasks(project);
