@@ -63,37 +63,25 @@ publishing {
         pluginMaven(MavenPublication) { mavenPublication ->
             pom {
                 name = 'Gradle Utils'
-                description = 'Used by MinecraftForge projects as a util library for Gradle buildscripts'
-                url = 'https://github.com/NeoForged/GradleUtils'
+                description = 'Gradle buildscript utility library for NeoForged projects'
+                url = 'https://github.com/neoforged/GradleUtils'
                 scm {
-                    url = 'https://github.com/NeoForged/GradleUtils'
-                    connection = 'scm:git:git://github.com/NeoForged/GradleUtils.git'
+                    url = 'https://github.com/neoforged/GradleUtils'
+                    connection = 'https://github.com/neoforged/GradleUtils.git'
                     developerConnection = 'scm:git:git@github.com:NeoForged/GradleUtils.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/NeoForged/GradleUtils/issues'
+                    url = 'https://github.com/neoforged/GradleUtils/issues'
                 }
-
+                organization {
+                    name = 'NeoForged'
+                    url = 'https://github.com/neoforged'
+                }
                 licenses {
                     license {
                         name = 'LGPLv2.1'
                         url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'LexManos'
-                        name = 'Lex Manos'
-                    }
-                    developer {
-                        id = 'SizableShrimp'
-                        name = 'SizableShrimp'
-                    }
-                    developer {
-                        id = 'marchermans'
-                        name = 'Orion'
                     }
                 }
             }
