@@ -9,6 +9,7 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(8)
     }
+    withSourcesJar()
 }
 
 group 'net.neoforged.gradleutils'
@@ -36,15 +37,6 @@ tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
     from(teamcityTemplateZip)
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    archiveClassifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives sourcesJar
-}
-
 license {
     header = file('HEADER')
     ext {
@@ -67,8 +59,6 @@ gradlePlugin {
 publishing {
     publications {
         pluginMaven(MavenPublication) { mavenPublication ->
-            artifact sourcesJar
-
             pom {
                 name = 'Gradle Utils'
                 description = 'Used by MinecraftForge projects as a util library for Gradle buildscripts'
