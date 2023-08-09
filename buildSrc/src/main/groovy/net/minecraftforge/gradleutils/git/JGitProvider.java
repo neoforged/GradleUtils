@@ -137,7 +137,7 @@ public class JGitProvider implements GitProvider {
 
         @Override
         public String run() {
-            return call(() -> command.setLong(longFormat).setTags(includeLightweightTags).setMatch(matchPatterns).call());
+            return call(() -> command.setLong(longFormat).setTags(includeLightweightTags).setMatch(matchPatterns.toArray(new String[0])).call());
         }
     }
 

@@ -22,7 +22,9 @@ package net.minecraftforge.gradleutils.git;
 
 import net.minecraftforge.gradleutils.git.GitProvider.DescribeCall;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Abstract skeleton of {@link DescribeCall}, for de-duplicating common code.
@@ -30,7 +32,7 @@ import java.util.Arrays;
 abstract class AbstractDescribeCall implements GitProvider.DescribeCall {
     protected boolean longFormat = false;
     protected boolean includeLightweightTags = false;
-    protected String[] matchPatterns = new String[0];
+    protected List<String> matchPatterns = new ArrayList<>();
 
     protected AbstractDescribeCall() {
     }
@@ -50,10 +52,9 @@ abstract class AbstractDescribeCall implements GitProvider.DescribeCall {
     @Override
     public DescribeCall matching(String... patterns) {
         if (patterns.length == 0) {
-            this.matchPatterns = patterns;
+            this.matchPatterns.clear();
         } else {
-            this.matchPatterns = Arrays.copyOf(this.matchPatterns, this.matchPatterns.length + patterns.length);
-            System.arraycopy(patterns, 0, matchPatterns, patterns.length, matchPatterns.length);
+            this.matchPatterns.addAll(Arrays.asList(patterns));
         }
         return this;
     }
