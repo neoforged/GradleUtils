@@ -88,9 +88,8 @@ public class CommandLineGitProvider implements GitProvider {
     @Nullable
     @Override
     public String getFullBranch() {
-        final String head = getHead();
         return runGit(false,
-                builder -> builder.command("symbolic-ref", "HEAD", head),
+                builder -> builder.command("symbolic-ref", "HEAD"),
                 process -> {
                     if (process.exitValue() != 0) return null;
                     return readSingleLine(process);
