@@ -38,13 +38,12 @@ tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
 }
 
 license {
-    header = file('HEADER')
+    header(file('HEADER'))
     ext {
         name = 'GradleUtils'
-        year = 2021
-        fullname = 'Forge Development LLC'
+        year = 2023
+        fullname = 'NeoForged and contributors'
     }
-    exclude '**/*.properties'
     skipExistingHeaders = true // Ignore existing license headers on files
 }
 
