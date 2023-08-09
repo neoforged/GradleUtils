@@ -45,6 +45,7 @@ license {
         fullname = 'Forge Development LLC'
     }
     exclude '**/*.properties'
+    skipExistingHeaders = true // Ignore existing license headers on files
 }
 
 gradlePlugin {
