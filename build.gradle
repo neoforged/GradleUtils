@@ -22,16 +22,19 @@ dependencies {
     implementation 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
 }
 
-task copyGradleUtilsResources(type: Copy) {
-    outputs.upToDateWhen { false }
-    into 'src/main/resources'
-    from('buildSrc/build/extraresources') {
-        include '**/*.zip'
-    }
+sourceSets {
+    teamcityTemplate
 }
 
-compileGroovy.dependsOn(copyGradleUtilsResources)
-checkLicenseMain.dependsOn(copyGradleUtilsResources)
+def teamcityTemplateZip = tasks.register('createTeamcityTemplateZip', Zip) {
+    from(sourceSets.teamcityTemplate.output)
+    archiveFileName.set('.teamcity.zip')
+    destinationDirectory.set(layout.buildDirectory.dir('template'))
+}
+
+tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
+    from(teamcityTemplateZip)
+}
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     archiveClassifier = 'sources'
