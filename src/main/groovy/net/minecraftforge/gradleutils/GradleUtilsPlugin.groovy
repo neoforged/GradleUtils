@@ -20,10 +20,12 @@
 
 package net.minecraftforge.gradleutils
 
+import groovy.transform.CompileStatic
 import net.minecraftforge.gradleutils.tasks.ExtractTeamCityProjectConfigurationTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
+@CompileStatic
 class GradleUtilsPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {

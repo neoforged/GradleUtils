@@ -20,6 +20,7 @@
 
 package net.minecraftforge.gradleutils
 
+import groovy.transform.CompileStatic
 import net.minecraftforge.gradleutils.tasks.GenerateChangelogTask
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
@@ -40,6 +41,7 @@ import org.gradle.api.publish.maven.MavenPublication
 import java.util.function.Function
 import java.util.regex.Pattern
 
+@CompileStatic
 class ChangelogUtils {
 
     /**
@@ -55,8 +57,8 @@ class ChangelogUtils {
         def git = Git.open(projectDirectory); //Grab git from the given project directory.
 
         def headCommit = getHead(git); //Grab the head commit.
-        def logFromCommit = getMergeBaseCommit(git); //Grab the last merge base commit on the current branch.
-        if (logFromCommit == null) {
+        RevCommit logFromCommit = getMergeBaseCommit(git); //Grab the last merge base commit on the current branch.
+        if (logFromCommit === null) {
             //Deal with a single branch repository without merge-base
             logFromCommit = getFirstCommitInRepository(git); //Just grab the first.
         }
@@ -268,7 +270,7 @@ class ChangelogUtils {
 
             RevCommit mergeBase = null;
             RevCommit current;
-            while ((current = walk.next()) != null) {
+            while ((current = walk.next()) !== null) {
                 mergeBase = current;
             }
             return mergeBase;
@@ -450,7 +452,7 @@ class ChangelogUtils {
      * @return The commit hash to identifiable-version map.
      */
     private static Map<String, String> getPrimaryVersionMap(final List<RevCommit> commits, final Map<String, String> commitHashToVersions) {
-        def lastVersion = null;
+        String lastVersion = null;
         List<String> currentVersionCommitHashes = new ArrayList<>();
         Map<String, String> primaryVersionMap = new HashMap<>();
 

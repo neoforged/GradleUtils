@@ -10,6 +10,8 @@ import org.gradle.api.publish.maven.MavenPublication
 
 import javax.inject.Inject
 
+// For some reason, annotating this as @CompileStatic causes the Groovy compiler to crash with StackOverflowError
+// TODO: investigate what in this class causes the Groovy compiler to crash when annotated with @CompileStatic
 class ChangelogGenerationExtension {
     private final Project project
     private boolean registerAllPublications = true
