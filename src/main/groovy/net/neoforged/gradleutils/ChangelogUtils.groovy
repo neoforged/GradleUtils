@@ -18,10 +18,10 @@
  * USA
  */
 
-package net.minecraftforge.gradleutils
+package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
-import net.minecraftforge.gradleutils.tasks.GenerateChangelogTask
+import net.neoforged.gradleutils.tasks.GenerateChangelogTask
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
 import org.eclipse.jgit.errors.MissingObjectException

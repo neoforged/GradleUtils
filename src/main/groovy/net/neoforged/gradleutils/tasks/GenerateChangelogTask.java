@@ -18,10 +18,10 @@
  * USA
  */
 
-package net.minecraftforge.gradleutils.tasks;
+package net.neoforged.gradleutils.tasks;
 
-import net.minecraftforge.gradleutils.ChangelogUtils;
-import net.minecraftforge.gradleutils.GradleUtils;
+import net.neoforged.gradleutils.ChangelogUtils;
+import net.neoforged.gradleutils.GradleUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Transformer;
 import org.gradle.api.file.DirectoryProperty;

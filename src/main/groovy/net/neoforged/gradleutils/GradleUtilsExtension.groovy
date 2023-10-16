@@ -18,7 +18,7 @@
  * USA
  */
 
-package net.minecraftforge.gradleutils
+package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
 import org.gradle.api.Project

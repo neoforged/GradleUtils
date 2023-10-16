@@ -53,7 +53,7 @@ gradlePlugin {
     plugins {
         gradleutils {
             id = 'net.neoforged.gradleutils'
-            implementationClass = 'net.minecraftforge.gradleutils.GradleUtilsPlugin'
+            implementationClass = 'net.neoforged.gradleutils.GradleUtilsPlugin'
         }
     }
 }
