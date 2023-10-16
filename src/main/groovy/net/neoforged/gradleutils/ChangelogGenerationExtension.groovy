@@ -46,6 +46,6 @@ class ChangelogGenerationExtension {
 
     private void afterEvaluate(final Project project) {
         if (registerAllPublications)
-            ChangelogUtils.setupChangelogGenerationOnAllPublishTasks(project);
+            ChangelogUtils.setupChangelogGenerationOnAllPublishTasks(project)
     }
 }

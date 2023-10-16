@@ -33,7 +33,7 @@ class GradleUtilsPlugin implements Plugin<Project> {
         ChangelogGenerationExtension changelogGenerationExtension = project.extensions.create("changelog", ChangelogGenerationExtension.class, project)
 
         //Setup the teamcity project task.
-        project.getTasks().register("setupTeamCityProject", ExtractTeamCityProjectConfigurationTask.class);
-        GradleUtils.setupCITasks(project);
+        project.getTasks().register("setupTeamCityProject", ExtractTeamCityProjectConfigurationTask.class)
+        GradleUtils.setupCITasks(project)
     }
 }
