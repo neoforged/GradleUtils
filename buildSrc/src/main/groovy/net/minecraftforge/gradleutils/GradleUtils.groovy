@@ -20,11 +20,9 @@
 
 package net.minecraftforge.gradleutils
 
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.errors.RepositoryNotFoundException
-import org.eclipse.jgit.lib.ObjectId
-import org.eclipse.jgit.lib.Repository
-import org.eclipse.jgit.transport.URIish
+import net.minecraftforge.gradleutils.git.CommandLineGitProvider
+import net.minecraftforge.gradleutils.git.GitProvider
+import net.minecraftforge.gradleutils.git.JGitProvider
 import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.authentication.http.BasicAuthentication
@@ -45,23 +43,22 @@ class GradleUtils {
     }
 
     static gitInfo(File dir, String... globFilters) {
-        def git
-        try {
-            git = openGit(dir)
-        } catch (RepositoryNotFoundException e) {
+        GitProvider provider = openGitProvider(dir)
+        if (provider == null) {
             return [
-                    tag: '0.0',
-                    offset: '0',
-                    hash: '00000000',
-                    branch: 'master',
-                    commit: '0000000000000000000000',
+                    tag          : '0.0',
+                    offset       : '0',
+                    hash         : '00000000',
+                    branch       : 'master',
+                    commit       : '0000000000000000000000',
                     abbreviatedId: '00000000'
             ]
         }
-        def tag = git.describe().setLong(true).setTags(true).setMatch(globFilters ?: new String[0]).call()
+
+        def tag = provider.describe().longFormat(true).includeLightweightTags(true).matching(globFilters).run()
         def desc = tag?.rsplit('-', 2) ?: ['0.0', '0', '00000000']
-        def head = git.repository.exactRef('HEAD')
-        def longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
+        def head = provider.head
+        def longBranch = provider.fullBranch
 
         def ret = [:]
         ret.dir = dir.absolutePath
@@ -70,12 +67,12 @@ class GradleUtils {
             ret.tag = ret.tag.substring(1)
         ret.offset = desc[1]
         ret.hash = desc[2]
-        ret.branch = longBranch != null ? Repository.shortenRefName(longBranch) : null
-        ret.commit = ObjectId.toString(head.objectId)
-        ret.abbreviatedId = head.objectId.abbreviate(8).name()
+        ret.branch = longBranch != null ? provider.shortenRef(longBranch) : null
+        ret.commit = head
+        ret.abbreviatedId = provider.abbreviateRef(head, 0)
 
         // Remove any lingering null values
-        ret.removeAll {it.value == null }
+        ret.removeAll { it.value == null }
 
         return ret
     }
@@ -324,55 +321,38 @@ class GradleUtils {
      * @return
      */
     static String buildProjectUrl(final File projectDir) {
-        Git git = openGit(projectDir) //Create a git workspace.
+        GitProvider provider = openGitProvider(projectDir)
+        if (provider == null)
+            throw new IllegalArgumentException("Could not find git repository for " + projectDir)
 
-        def remotes = git.remoteList().call() //Get all remotes.
-        if (remotes.size() == 0)
+        if (provider.remotesCount == 0)
             throw new IllegalStateException("No remotes found in " + projectDir)
 
-        //Get the origin remote.
-        def originRemote = remotes.toList().stream()
-            .filter(r -> r.getName().equals("origin"))
-            .findFirst()
-            .orElse(null)
-
-        //We do not have an origin named remote
-        if (originRemote == null)
-        {
-            return ""
-        }
-
         //Get the origin push url.
-        def originUrl = originRemote.getURIs().toList().stream()
-            .findFirst()
-            .orElse(null)
+        def originUrl = provider.getRemotePushUrl("origin")
 
         //We do not have a origin url
-        if (originUrl == null)
-        {
+        if (originUrl == null) {
             return ""
         }
 
-        //Grab its string representation and process.
-        def originUrlString = originUrl.toString()
         //Determine the protocol
-        if (originUrlString.startsWith("ssh")) {
+        if (originUrl.startsWith("ssh")) {
             //If ssh then check for authentication data.
-            if (originUrlString.contains("@")) {
+            if (originUrl.contains("@")) {
                 //We have authentication data: Strip it.
-                return "https://" + originUrlString.substring(originUrlString.indexOf("@") + 1).replace(".git", "")
-            } else
-            {
+                return "https://" + originUrl.substring(originUrl.indexOf("@") + 1).replace(".git", "")
+            } else {
                 //No authentication data: Switch to https.
-                return "https://" + originUrlString.substring(6).replace(".git", "")
+                return "https://" + originUrl.substring(6).replace(".git", "")
             }
-        } else if (originUrlString.startsWith("http")) {
+        } else if (originUrl.startsWith("http")) {
             //Standard http protocol: Strip the ".git" ending only.
-            return originUrlString.replace(".git", "")
+            return originUrl.replace(".git", "")
         }
 
         //What other case exists? Just to be sure lets return this.
-        return originUrlString
+        return originUrl
     }
 
     /**
@@ -405,28 +385,15 @@ class GradleUtils {
         }
     }
 
-    static Git openGit(File projectDir, Throwable lastException = null) {
-        try {
-            return Git.open(projectDir)
-        } catch (IOException e) {
-            if (projectDir.getParentFile() != null) {
-                return openGit(projectDir.getParentFile(), lastException == null ? e : lastException)
-            } else {
-                throw lastException
-            }
+    static File getGitDirectory(File projectDir) {
+        def git = openGitProvider(projectDir)
+        if (git == null) {
+            new IllegalArgumentException("Could not find git directory in or above: " + projectDir.getAbsolutePath())
         }
+        return git.dotGitDirectory
     }
 
-    static File getGitDirectory(File projectDir, Throwable lastException = null) {
-        try {
-            Git.open(projectDir);
-            return new File(projectDir, ".git");
-        } catch (IOException ignored) {
-            if (projectDir.getParentFile() != null) {
-                return getGitDirectory(projectDir.getParentFile(), lastException == null ? new IllegalArgumentException("Could not find git directory in or above: " + projectDir.getAbsolutePath()) : lastException)
-            } else {
-                throw lastException
-            }
-        }
+    static GitProvider openGitProvider(File projectDir) {
+        return CommandLineGitProvider.create(projectDir) ?: JGitProvider.create(projectDir)
     }
 }
