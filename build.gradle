@@ -111,3 +111,12 @@ publishing {
         }
     }
 }
+
+tasks.register("configureTeamCity") {
+    // Print marker lines into the log which configure the pipeline
+    doLast {
+        project.getLogger().lifecycle("Setting project variables and parameters.")
+        println "##teamcity[buildNumber '${project.version}']"
+        println "##teamcity[setParameter name='env.PUBLISHED_JAVA_ARTIFACT_VERSION' value='${project.version}']"
+    }
+}
