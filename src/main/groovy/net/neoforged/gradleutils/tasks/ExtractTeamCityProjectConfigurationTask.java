@@ -18,7 +18,7 @@
  * USA
  */
 
-package net.minecraftforge.gradleutils.tasks;
+package net.neoforged.gradleutils.tasks;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;

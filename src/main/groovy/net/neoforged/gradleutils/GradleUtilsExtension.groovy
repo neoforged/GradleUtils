@@ -18,14 +18,17 @@
  * USA
  */
 
-package net.minecraftforge.gradleutils
+package net.neoforged.gradleutils
 
+import groovy.transform.CompileStatic
 import org.gradle.api.Project
+import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Provider
 
 import javax.inject.Inject
 
+@CompileStatic
 class GradleUtilsExtension {
     private final Project project
     final DirectoryProperty gitRoot
@@ -37,7 +40,7 @@ class GradleUtilsExtension {
 
         this.gitRoot = project.objects.directoryProperty().convention(project.layout.projectDirectory)
         this.gitInfo = project.objects.mapProperty(String, String)
-                .convention(gitRoot.map(dir -> GradleUtils.gitInfo(dir.asFile)))
+                .convention(gitRoot.map({ Directory dir -> GradleUtils.gitInfo(dir.asFile) }))
     }
 
     /**

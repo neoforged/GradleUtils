@@ -18,12 +18,14 @@
  * USA
  */
 
-package net.minecraftforge.gradleutils
+package net.neoforged.gradleutils
 
-import net.minecraftforge.gradleutils.tasks.ExtractTeamCityProjectConfigurationTask
+import groovy.transform.CompileStatic
+import net.neoforged.gradleutils.tasks.ExtractTeamCityProjectConfigurationTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
+@CompileStatic
 class GradleUtilsPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
@@ -31,7 +33,7 @@ class GradleUtilsPlugin implements Plugin<Project> {
         ChangelogGenerationExtension changelogGenerationExtension = project.extensions.create("changelog", ChangelogGenerationExtension.class, project)
 
         //Setup the teamcity project task.
-        project.getTasks().register("setupTeamCityProject", ExtractTeamCityProjectConfigurationTask.class);
-        GradleUtils.setupCITasks(project);
+        project.getTasks().register("setupTeamCityProject", ExtractTeamCityProjectConfigurationTask.class)
+        GradleUtils.setupCITasks(project)
     }
 }

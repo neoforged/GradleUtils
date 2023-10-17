@@ -1,8 +1,3 @@
-import net.minecraftforge.gradleutils.ChangelogUtils
-import net.minecraftforge.gradleutils.GradleUtils
-import net.minecraftforge.gradleutils.tasks.ExtractTeamCityProjectConfigurationTask
-import net.minecraftforge.gradleutils.tasks.GenerateChangelogTask
-
 plugins {
     id 'java-gradle-plugin'
     id 'groovy'
@@ -10,14 +5,11 @@ plugins {
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
-ext {
-    GIT_INFO = GradleUtils.gitInfo(file('.'))
-}
-
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(8)
     }
+    withSourcesJar()
 }
 
 group 'net.neoforged.gradleutils'
@@ -28,112 +20,132 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
+    api 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
 }
 
-task copyGradleUtilsGroovy(type: Copy) {
-    outputs.upToDateWhen { false }
-    into 'src/main/groovy'
-    from('buildSrc/src/main/groovy') {
-        include '**/*.groovy'
-        include '**/*.java'
-    }
+sourceSets {
+    teamcityTemplate
 }
 
-task copyGradleUtilsResources(type: Copy) {
-    outputs.upToDateWhen { false }
-    into 'src/main/resources'
-    from('buildSrc/build/extraresources') {
-        include '**/*.zip'
-    }
+def teamcityTemplateZip = tasks.register('createTeamcityTemplateZip', Zip) {
+    from(sourceSets.teamcityTemplate.output)
+    archiveFileName.set('.teamcity.zip')
+    destinationDirectory.set(layout.buildDirectory.dir('template'))
 }
 
-compileGroovy.dependsOn(copyGradleUtilsResources)
-checkLicenseMain.dependsOn(copyGradleUtilsResources)
-compileGroovy.dependsOn(copyGradleUtilsGroovy)
-checkLicenseMain.dependsOn(copyGradleUtilsGroovy)
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    archiveClassifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives sourcesJar
+tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
+    from(teamcityTemplateZip)
 }
 
 license {
-    header = file('HEADER')
-    ext {
-        name = 'GradleUtils'
-        year = 2021
-        fullname = 'Forge Development LLC'
+    header(file('HEADER'))
+    skipExistingHeaders = true // Ignore existing license headers on files
+}
+
+// Disable the license tasks for the TeamCity template files
+['checkLicenseTeamcityTemplate', 'updateLicenseTeamcityTemplate'].each {
+    tasks.named(it) {
+        enabled = false
     }
-    exclude '**/*.properties'
 }
 
 gradlePlugin {
     plugins {
         gradleutils {
             id = 'net.neoforged.gradleutils'
-            implementationClass = 'net.minecraftforge.gradleutils.GradleUtilsPlugin'
+            implementationClass = 'net.neoforged.gradleutils.GradleUtilsPlugin'
         }
     }
 }
 
-ChangelogUtils.setupChangelogGenerationFromTag(project, '1.0')
+final changelogTask = tasks.register('changelog') {
+    RegularFileProperty outputFile = objects.fileProperty().convention(layout.buildDirectory.file('changelog.txt'))
+    it.outputs.file(outputFile).withPropertyName('output changelog file')
+
+    it.description = 'Generates a commit changelog using the git CLI command'
+    it.doLast {
+        try {
+            outputFile.get().asFile.withOutputStream { output ->
+                project.exec { ExecSpec spec ->
+                    // TODO: limit to last reachable tag?
+                    spec.commandLine('git', 'log', '--no-show-signature', '--no-color',
+                            '--pretty=%h% (describe:tags=true:abbrev) (%aN) %s')
+                            .standardOutput(output)
+                }.assertNormalExitValue().rethrowFailure()
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to generate changelog; check if 'git' is on the PATH", e)
+        }
+    }
+}
+
+tasks.named('assemble') {
+    it.dependsOn changelogTask
+}
 
 publishing {
     publications {
         pluginMaven(MavenPublication) { mavenPublication ->
-            artifact sourcesJar
-
-            ChangelogUtils.setupChangelogGenerationForPublishing(project, mavenPublication)
-
+            artifact(changelogTask) {
+                classifier = 'changelog'
+                extension = 'txt'
+            }
             pom {
                 name = 'Gradle Utils'
-                description = 'Used by MinecraftForge projects as a util library for Gradle buildscripts'
-                url = 'https://github.com/NeoForged/GradleUtils'
+                description = 'Gradle buildscript utility library for NeoForged projects'
+                url = 'https://github.com/neoforged/GradleUtils'
                 scm {
-                    url = 'https://github.com/NeoForged/GradleUtils'
-                    connection = 'scm:git:git://github.com/NeoForged/GradleUtils.git'
+                    url = 'https://github.com/neoforged/GradleUtils'
+                    connection = 'https://github.com/neoforged/GradleUtils.git'
                     developerConnection = 'scm:git:git@github.com:NeoForged/GradleUtils.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/NeoForged/GradleUtils/issues'
+                    url = 'https://github.com/neoforged/GradleUtils/issues'
                 }
-
+                organization {
+                    name = 'NeoForged'
+                    url = 'https://github.com/neoforged'
+                }
                 licenses {
                     license {
                         name = 'LGPLv2.1'
                         url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
                     }
                 }
-
-                developers {
-                    developer {
-                        id = 'LexManos'
-                        name = 'Lex Manos'
-                    }
-                    developer {
-                        id = 'SizableShrimp'
-                        name = 'SizableShrimp'
-                    }
-                    developer {
-                        id = 'marchermans'
-                        name = 'Orion'
-                    }
-                }
             }
         }
     }
     repositories {
-        maven GradleUtils.getPublishingForgeMaven(project)
+        maven {
+            name 'forge'
+            if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
+                def publishingEndpoint = System.env.MAVEN_URL_RELEASE ?: 'https://maven.neoforged.net/releases'
+
+                if (project.version.toString().endsWith("-SNAPSHOT") && System.env.MAVEN_URL_SNAPSHOTS) {
+                    url System.env.MAVEN_URL_SNAPSHOTS
+                } else {
+                    url publishingEndpoint
+                }
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.env.MAVEN_USER
+                    password = System.env.MAVEN_PASSWORD
+                }
+            } else {
+                url 'repo'
+            }
+        }
     }
 }
 
-task setupTeamCityProject(type: ExtractTeamCityProjectConfigurationTask) {
+tasks.register("configureTeamCity") {
+    // Print marker lines into the log which configure the pipeline
+    doLast {
+        project.getLogger().lifecycle("Setting project variables and parameters.")
+        println "##teamcity[buildNumber '${project.version}']"
+        println "##teamcity[setParameter name='env.PUBLISHED_JAVA_ARTIFACT_VERSION' value='${project.version}']"
+    }
 }
-
-GradleUtils.setupCITasks(project);
