@@ -58,9 +58,38 @@ gradlePlugin {
     }
 }
 
+final changelogTask = tasks.register('changelog') {
+    RegularFileProperty outputFile = objects.fileProperty().convention(layout.buildDirectory.file('changelog.txt'))
+    it.outputs.file(outputFile).withPropertyName('output changelog file')
+
+    it.description = 'Generates a commit changelog using the git CLI command'
+    it.doLast {
+        try {
+            outputFile.get().asFile.withOutputStream { output ->
+                project.exec { ExecSpec spec ->
+                    // TODO: limit to last reachable tag?
+                    spec.commandLine('git', 'log', '--no-show-signature', '--no-color',
+                            '--pretty=%h% (describe:tags=true:abbrev) (%aN) %s')
+                            .standardOutput(output)
+                }.assertNormalExitValue().rethrowFailure()
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to generate changelog; check if 'git' is on the PATH", e)
+        }
+    }
+}
+
+tasks.named('assemble') {
+    it.dependsOn changelogTask
+}
+
 publishing {
     publications {
         pluginMaven(MavenPublication) { mavenPublication ->
+            artifact(changelogTask) {
+                classifier = 'changelog'
+                extension = 'txt'
+            }
             pom {
                 name = 'Gradle Utils'
                 description = 'Gradle buildscript utility library for NeoForged projects'
