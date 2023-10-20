@@ -23,15 +23,15 @@ import javax.annotation.Nullable
 
 @PackageScope
 @CompileStatic
-interface GitInfoValueSource extends ValueSource<GitInfo, Parameters> {
-    interface Parameters extends ValueSourceParameters {
+abstract class GitInfoValueSource implements ValueSource<GitInfo, Parameters> {
+    static interface Parameters extends ValueSourceParameters {
         DirectoryProperty getWorkingDirectory()
 
         SetProperty<String> getTagFilters()
     }
 
     @Override
-    default GitInfo obtain() {
+    GitInfo obtain() {
         try (Repository repo = new FileRepositoryBuilder().findGitDir(parameters.workingDirectory.get().asFile).build()) {
             final git = Git.wrap(repo)
 
@@ -73,7 +73,7 @@ interface GitInfoValueSource extends ValueSource<GitInfo, Parameters> {
     }
 
     @Nullable
-    default String getRemotePushUrl(Git git, String remoteName) {
+    private static String getRemotePushUrl(Git git, String remoteName) {
         def remotes = git.remoteList().call()
         if (remotes.size() == 0)
             return null
@@ -96,8 +96,8 @@ interface GitInfoValueSource extends ValueSource<GitInfo, Parameters> {
 
         return transformPushUrl(originUrl.toString())
     }
-    
-    default String transformPushUrl(String url) {
+
+    private static String transformPushUrl(String url) {
         if (url.startsWith("ssh")) {
             // Convert SSH urls to HTTPS
             // Check for authentication data (e.g., username:password@example.com)
@@ -118,7 +118,7 @@ interface GitInfoValueSource extends ValueSource<GitInfo, Parameters> {
     }
 
     @Immutable
-    class GitInfo {
+    static class GitInfo {
         final Map<String, String> gitInfo
         @Nullable
         final String originUrl

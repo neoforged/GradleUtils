@@ -42,7 +42,7 @@ abstract class GradleUtilsExtension {
         this.gitRoot = project.objects.directoryProperty().convention(project.layout.projectDirectory)
         this.rawInfo = project.providers.of(GitInfoValueSource) {
             it.parameters {
-                workingDirectory.set(this.gitRoot)
+                it.workingDirectory.set(this.gitRoot)
             }
         }
         this.gitInfo = project.objects.mapProperty(String, String)
@@ -59,8 +59,8 @@ abstract class GradleUtilsExtension {
             filter += '**'
         final valueSource = project.providers.of(GitInfoValueSource) {
             it.parameters {
-                workingDirectory.set(this.gitRoot)
-                tagFilters.add(filter)
+                it.workingDirectory.set(this.gitRoot)
+                it.tagFilters.add(filter)
             }
         }
         return valueSource.get().gitInfo

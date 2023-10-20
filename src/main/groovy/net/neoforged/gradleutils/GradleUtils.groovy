@@ -403,7 +403,7 @@ class GradleUtils {
             // Only setup the CI environment if and only if the environment variables are set.
             final versionProvider = project.provider { project.version?.toString() }
             project.tasks.register("configureTeamCity", ConfigureTeamCity) {
-                version.set(versionProvider)
+                it.version.set(versionProvider)
             }
         }
     }
