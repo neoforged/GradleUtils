@@ -25,8 +25,12 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Repository
+import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.TaskAction
 import org.gradle.authentication.http.BasicAuthentication
 
 import javax.annotation.Nullable
@@ -396,15 +400,25 @@ class GradleUtils {
      */
     private static void setupTeamCityTasks(Project project) {
         if (System.getenv('TEAMCITY_VERSION')) {
-            //Only setup the CI environment if and only if the environment variables are set.
-            def teamCityCITask = project.tasks.register("configureTeamCity") { task ->
-                //Print the marker lines into the log which configure the pipeline.
-                task.doLast {
-                    project.getLogger().lifecycle("Setting project variables and parameters.")
-                    println "##teamcity[buildNumber '${project.version}']"
-                    println "##teamcity[setParameter name='env.PUBLISHED_JAVA_ARTIFACT_VERSION' value='${project.version}']"
-                }
+            // Only setup the CI environment if and only if the environment variables are set.
+            final versionProvider = project.provider { project.version?.toString() }
+            project.tasks.register("configureTeamCity", ConfigureTeamCity) {
+                version.set(versionProvider)
             }
+        }
+    }
+
+    abstract static class ConfigureTeamCity extends DefaultTask {
+        @Input
+        abstract Property<String> getVersion()
+
+        @TaskAction
+        void doAction() {
+            final versionString = version.get()
+            // Print marker lines into the log which configure the pipeline
+            logger.lifecycle("Setting project variables and parameters.")
+            println "##teamcity[buildNumber '${versionString}']"
+            println "##teamcity[setParameter name='env.PUBLISHED_JAVA_ARTIFACT_VERSION' value='${versionString}']"
         }
     }
 
