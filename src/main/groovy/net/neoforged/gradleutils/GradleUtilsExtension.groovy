@@ -25,22 +25,45 @@ import org.gradle.api.Project
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Internal
 
 import javax.inject.Inject
 
 @CompileStatic
-class GradleUtilsExtension {
+abstract class GradleUtilsExtension {
     private final Project project
     final DirectoryProperty gitRoot
+    private final Provider<GitInfoValueSource.GitInfo> rawInfo
     private final Provider<Map<String, String>> gitInfo
 
     @Inject
     GradleUtilsExtension(Project project) {
         this.project = project
-
         this.gitRoot = project.objects.directoryProperty().convention(project.layout.projectDirectory)
+        this.rawInfo = project.providers.of(GitInfoValueSource) {
+            it.parameters {
+                workingDirectory.set(this.gitRoot)
+            }
+        }
         this.gitInfo = project.objects.mapProperty(String, String)
                 .convention(gitRoot.map({ Directory dir -> GradleUtils.gitInfo(dir.asFile) }))
+    }
+
+    @Internal // Do not use, only visible for use in the 'tasks' subpackage
+    Provider<String> getOriginUrl() {
+        rawInfo.map { it.originUrl }
+    }
+
+    private Map<String, String> getFilteredInfo(boolean prefix = false, String filter) {
+        if (prefix)
+            filter += '**'
+        final valueSource = project.providers.of(GitInfoValueSource) {
+            it.parameters {
+                workingDirectory.set(this.gitRoot)
+                tagFilters.add(filter)
+            }
+        }
+        return valueSource.get().gitInfo
     }
 
     /**
@@ -62,7 +85,7 @@ class GradleUtilsExtension {
      * @return a version in the form {@code $tag.$offset}, e.g. 1.0.5
      */
     String getFilteredTagOffsetVersion(boolean prefix = false, String filter) {
-        return GradleUtils.getFilteredTagOffsetBranchVersion(getGitInfo(), prefix, filter)
+        return GradleUtils.getTagOffsetBranchVersion(getFilteredInfo(prefix, filter))
     }
 
     /**
@@ -88,7 +111,7 @@ class GradleUtilsExtension {
      * @return a version in the form {@code $tag.$offset} or {@code $tag.$offset-$branch}
      */
     String getFilteredTagOffsetBranchVersion(boolean prefix = false, String filter, String... allowedBranches) {
-        return GradleUtils.getFilteredTagOffsetBranchVersion(getGitInfo(), prefix, filter, allowedBranches)
+        return GradleUtils.getTagOffsetBranchVersion(getFilteredInfo(prefix, filter), allowedBranches)
     }
 
     /**
@@ -116,7 +139,7 @@ class GradleUtilsExtension {
      * @return a version in the form {@code $mcVersion-$tag.$offset} or {@code $mcVersion-$tag.$offset-$branch}
      */
     String getFilteredMCTagOffsetBranchVersion(boolean prefix = false, String filter, String mcVersion, String... allowedBranches) {
-        return GradleUtils.getFilteredMCTagOffsetBranchVersion(getGitInfo(), prefix, filter, mcVersion, allowedBranches)
+        return GradleUtils.getMCTagOffsetBranchVersion(getFilteredInfo(prefix, filter), mcVersion, allowedBranches)
     }
 
     Map<String, String> getGitInfo() {

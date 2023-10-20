@@ -22,6 +22,7 @@ package net.neoforged.gradleutils.tasks;
 
 import net.neoforged.gradleutils.ChangelogUtils;
 import net.neoforged.gradleutils.GradleUtils;
+import net.neoforged.gradleutils.GradleUtilsExtension;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Transformer;
 import org.gradle.api.file.DirectoryProperty;
@@ -46,7 +47,7 @@ public abstract class GenerateChangelogTask extends DefaultTask
 
     public GenerateChangelogTask()
     {
-        super();
+        final GradleUtilsExtension extension = getProject().getExtensions().getByType(GradleUtilsExtension.class);
 
         //Setup defaults: Using merge-base based text changelog generation of the local project into build/changelog.txt
         getGitDirectory().fileValue(GradleUtils.getGitDirectory(getProject().getProjectDir()));
@@ -54,7 +55,7 @@ public abstract class GenerateChangelogTask extends DefaultTask
         getOutputFile().convention(getProject().getLayout().getBuildDirectory().file("changelog.txt"));
         getStartingCommit().convention("");
         getStartingTag().convention("");
-        getProjectUrl().convention(GradleUtils.buildProjectUrl(getProject().getProjectDir()));
+        getProjectUrl().convention(extension.getOriginUrl());
     }
 
     @InputDirectory
