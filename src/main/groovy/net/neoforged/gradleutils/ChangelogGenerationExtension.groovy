@@ -5,13 +5,13 @@
 
 package net.neoforged.gradleutils
 
+import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
 
 import javax.inject.Inject
 
-// For some reason, annotating this as @CompileStatic causes the Groovy compiler to crash with StackOverflowError
-// TODO: investigate what in this class causes the Groovy compiler to crash when annotated with @CompileStatic
+@CompileStatic
 class ChangelogGenerationExtension {
     private final Project project
     private boolean registerAllPublications = true
@@ -23,17 +23,25 @@ class ChangelogGenerationExtension {
 
     void fromMergeBase() {
         ChangelogUtils.setupChangelogGeneration(project)
-        project.afterEvaluate(this::afterEvaluate)
+        // These shouldn't be project.afterEvaluate(this::afterEvaluate), otherwise the Groovy compiler crashes
+        // Don't know why, but it's just how it is
+        project.afterEvaluate {
+            afterEvaluate(project)
+        }
     }
 
     void fromTag(final String tag) {
         ChangelogUtils.setupChangelogGenerationFromTag(project, tag)
-        project.afterEvaluate(this::afterEvaluate)
+        project.afterEvaluate {
+            afterEvaluate(project)
+        }
     }
 
     void fromCommit(final String commit) {
         ChangelogUtils.setupChangelogGenerationFromCommit(project, commit)
-        project.afterEvaluate(this::afterEvaluate)
+        project.afterEvaluate {
+            afterEvaluate(project)
+        }
     }
 
     void disableAutomaticPublicationRegistration() {
