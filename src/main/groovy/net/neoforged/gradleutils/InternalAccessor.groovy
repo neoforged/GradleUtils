@@ -8,6 +8,8 @@ package net.neoforged.gradleutils
 import groovy.transform.CompileStatic
 import org.gradle.api.provider.Provider
 
+import javax.annotation.Nullable
+
 /**
  * <strong>Internal</strong> accessor for methods in this package that needs to be accessed <strong>only</strong> 
  * from subpackages. <strong>Do not use this class from outside GradleUtils</strong>, as this class may be changed or
@@ -29,5 +31,9 @@ class InternalAccessor {
 
     static Provider<String> getOriginUrl(final GradleUtilsExtension extension) {
         return extension.rawInfo.map { it.originUrl }
+    }
+
+    static List<String> rsplit(@Nullable String input, String del, int limit = -1) {
+        return GradleUtils.rsplit(input, del, limit)
     }
 }

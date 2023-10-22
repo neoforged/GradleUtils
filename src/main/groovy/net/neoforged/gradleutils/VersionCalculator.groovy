@@ -1,0 +1,160 @@
+/*
+ * Copyright (c) NeoForged and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
+package net.neoforged.gradleutils
+
+import groovy.transform.CompileStatic
+import groovy.transform.Immutable
+import groovy.transform.PackageScope
+import net.neoforged.gradleutils.specs.VersionSpec
+import org.eclipse.jgit.api.DescribeCommand
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.Constants
+import org.eclipse.jgit.lib.Repository
+
+import javax.annotation.Nullable
+
+// Responsible for actually calculating the version
+@CompileStatic
+@PackageScope
+class VersionCalculator {
+    @PackageScope
+    static final char GENERAL_SEPARATOR = '-'
+    @PackageScope
+    static final char VERSION_SEPARATOR = '.'
+
+    private final VersionSpec config
+
+    VersionCalculator(VersionSpec config) {
+        this.config = config
+    }
+
+    String calculate(Git git) {
+        return calculate(git, Constants.HEAD)
+    }
+
+    String calculate(Git git, String rev) {
+        final describe = findTag(git, rev)
+
+        String tag = describe.tag
+        // Strip label from tag
+        if (config.tags.stripTagLabel.get()) {
+            final sepIdx = describe.tag.lastIndexOf(GENERAL_SEPARATOR as int)
+            if (sepIdx != -1) {
+                tag = describe.tag.substring(0, sepIdx)
+            }
+        }
+
+        // [<prefix>.]<tag>[.<offset>][-<label>][-<branch>]
+        StringBuilder version = new StringBuilder()
+
+        @Nullable final prefix = config.versionPrefix.getOrNull()
+        if (prefix != null) {
+            version.append(prefix).append(GENERAL_SEPARATOR)
+        }
+
+        version.append(tag)
+
+        if (config.tags.appendCommitOffset.get()) {
+            version.append(VERSION_SEPARATOR).append(describe.offset)
+        }
+
+        if (describe.label != null) {
+            version.append(GENERAL_SEPARATOR).append(describe.label)
+        }
+
+        if (config.branches.suffixBranch.get()) {
+            @Nullable final branchSuffix = getBranchSuffix(git)
+            if (branchSuffix != null) {
+                version.append(GENERAL_SEPARATOR).append(branchSuffix)
+            }
+        }
+
+        return version.toString()
+    }
+
+    private DescribeOutput findTag(Git git, String startingRev) {
+        TagContextImpl context = new TagContextImpl()
+        context.label = config.tags.label.getOrNull()
+        int trackedCommitCount = 0
+        String currentRev = startingRev
+
+        while (true) {
+            final described = describe(git).setTarget(currentRev).call()
+            // Describe (long) output is "<tag>-<offset>-g<commit>"
+            final describeSplit = GradleUtils.rsplit(described, '-', 2)
+
+            context.tag = describeSplit[0]
+            trackedCommitCount += Integer.parseUnsignedInt(describeSplit[1])
+            if (config.tags.extractLabel.get()) {
+                final int separatorIndex = context.tag.lastIndexOf(GENERAL_SEPARATOR as int)
+                // TODO: should we ignore empty labels? (i.e. `1.0-`)
+                if (separatorIndex != -1) {
+                    context.label = context.tag.substring(separatorIndex + 1)
+                }
+            }
+
+            @Nullable final markerLabel = config.tags.cleanMarkerLabel.getOrNull()
+            if (markerLabel == null || !context.endsWithLabel(markerLabel)) break
+            // Tag ends with the clean marker label -- reset label to null and continue searching
+            context.label = null
+
+            // Because JGit doesn't provide the equivalent to '--exclude', we have to manually go about this
+            // by searching the parent of the current tag, which is why we track the commit count
+
+            // nth ancestor selector (~2 meaning grandparent)
+            currentRev = context.tag + '~1'
+            // This accounts for the commit at the current tag (which is skipped due to using tag's parent)
+            trackedCommitCount += 1
+        }
+
+        if (context.tag.isEmpty()) throw new RuntimeException("Somehow got left with no tag?")
+        return new DescribeOutput(context.tag, trackedCommitCount, context.label)
+    }
+
+    @Nullable
+    private String getBranchSuffix(Git git) {
+        final head = git.repository.exactRef('HEAD')
+        // Matches Repository.getFullBranch() but returning null when on a detached HEAD
+        final longBranch = head.symbolic ? head?.target?.name : null
+
+        String branch = longBranch != null ? Repository.shortenRefName(longBranch) : ''
+        if (branch in config.branches.suffixExemptedBranches.get()) {
+            // Branch is exempted from suffix
+            return null
+        }
+
+        // Convert GH pull request refs names (pulls/<#>/head) to a smaller format, without the /head
+        if (branch?.startsWith('pulls/'))
+            branch = 'pr' + GradleUtils.rsplit(branch, '/', 1)[1]
+        branch = branch?.replaceAll(/[\\\/]/, '-')
+        return branch
+    }
+
+    @Immutable
+    static class DescribeOutput {
+        final String tag
+        final int offset
+        final String label
+    }
+
+    private DescribeCommand describe(Git git) {
+        final includeFilters = config.tags.includeFilters.get().<String> toArray(new String[0])
+        return git.describe()
+                .setLong(true)
+                .setTags(config.tags.includeLightweightTags.get())
+                .setMatch(includeFilters)
+    }
+
+    static class TagContextImpl {
+        @Nullable
+        String label = null
+        String tag = ""
+
+        boolean endsWithLabel(String label) {
+            return this.tag.endsWith(GENERAL_SEPARATOR.toString() + label)
+        }
+    }
+}
