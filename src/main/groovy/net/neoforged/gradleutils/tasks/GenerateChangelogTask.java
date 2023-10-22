@@ -41,12 +41,17 @@ public abstract class GenerateChangelogTask extends DefaultTask
         final GradleUtilsExtension extension = getProject().getExtensions().getByType(GradleUtilsExtension.class);
 
         //Setup defaults: Using merge-base based text changelog generation of the local project into build/changelog.txt
-        getWorkingDirectory().fileValue(getProject().getProjectDir());
+        // TODO: plugging in the project dir means Gradle tries to track _everything_ in the project dir
+        // need to find a way to circumvent this annoying part -- for now, we rely on this plugin being applied on the 
+        // repository root project
+        getWorkingDirectory().convention(getProject().getLayout().getProjectDirectory().dir(".git"));
         getBuildMarkdown().convention(false);
         getOutputFile().convention(getProject().getLayout().getBuildDirectory().file("changelog.txt"));
         getStartingCommit().convention("");
         getStartingTag().convention("");
         getProjectUrl().convention(InternalAccessor.getOriginUrl(extension));
+        
+        doNotTrackState("The working directory input prevents proper state tracking");
     }
 
     @InputDirectory
