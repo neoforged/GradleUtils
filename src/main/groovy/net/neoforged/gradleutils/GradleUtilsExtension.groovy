@@ -21,11 +21,11 @@
 package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Internal
 
 import javax.inject.Inject
 
@@ -33,7 +33,8 @@ import javax.inject.Inject
 abstract class GradleUtilsExtension {
     private final Project project
     final DirectoryProperty gitRoot
-    private final Provider<GitInfoValueSource.GitInfo> rawInfo
+    @PackageScope
+    final Provider<GitInfoValueSource.GitInfo> rawInfo
     private final Provider<Map<String, String>> gitInfo
 
     @Inject
@@ -47,11 +48,6 @@ abstract class GradleUtilsExtension {
         }
         this.gitInfo = project.objects.mapProperty(String, String)
                 .convention(gitRoot.map({ Directory dir -> GradleUtils.gitInfo(dir.asFile) }))
-    }
-
-    @Internal // Do not use, only visible for use in the 'tasks' subpackage
-    Provider<String> getOriginUrl() {
-        rawInfo.map { it.originUrl }
     }
 
     private Map<String, String> getFilteredInfo(boolean prefix = false, String filter) {

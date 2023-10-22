@@ -21,6 +21,7 @@
 package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.eclipse.jgit.lib.ObjectId
@@ -36,6 +37,7 @@ import org.gradle.authentication.http.BasicAuthentication
 import javax.annotation.Nullable
 
 @CompileStatic
+@PackageScope
 class GradleUtils {
 
     static List<String> rsplit(@Nullable String input, String del, int limit = -1) {

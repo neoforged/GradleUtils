@@ -20,8 +20,8 @@
 
 package net.neoforged.gradleutils.tasks;
 
-import net.neoforged.gradleutils.ChangelogUtils;
 import net.neoforged.gradleutils.GradleUtilsExtension;
+import net.neoforged.gradleutils.InternalAccessor;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
@@ -46,7 +46,7 @@ public abstract class GenerateChangelogTask extends DefaultTask
         getOutputFile().convention(getProject().getLayout().getBuildDirectory().file("changelog.txt"));
         getStartingCommit().convention("");
         getStartingTag().convention("");
-        getProjectUrl().convention(extension.getOriginUrl());
+        getProjectUrl().convention(InternalAccessor.getOriginUrl(extension));
     }
 
     @InputDirectory
@@ -79,13 +79,13 @@ public abstract class GenerateChangelogTask extends DefaultTask
 
         String changelog = "";
         if (startingCommit.isEmpty() && startingTag.isEmpty()) {
-            changelog = ChangelogUtils.generateChangelog(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get());
+            changelog = InternalAccessor.generateChangelog(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get());
         }
         else if (startingCommit.isEmpty())  {
-            changelog = ChangelogUtils.generateChangelog(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get(), startingTag);
+            changelog = InternalAccessor.generateChangelog(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get(), startingTag);
         }
         else {
-            changelog = ChangelogUtils.generateChangelogFromCommit(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get(), startingCommit);
+            changelog = InternalAccessor.generateChangelogFromCommit(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get(), startingCommit);
         }
 
         final File outputFile = getOutputFile().getAsFile().get();

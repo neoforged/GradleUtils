@@ -21,6 +21,7 @@
 package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import net.neoforged.gradleutils.tasks.GenerateChangelogTask
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
@@ -42,6 +43,7 @@ import java.util.function.Function
 import java.util.regex.Pattern
 
 @CompileStatic
+@PackageScope
 class ChangelogUtils {
 
     /**
