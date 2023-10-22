@@ -173,41 +173,6 @@ class GradleUtils {
     }
 
     /**
-     * Get a closure for the Forge maven to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
-     * in a repositories block.
-     *
-     * @return a closure
-     */
-    static Closure getForgeReleaseMaven() {
-        return { MavenArtifactRepository it ->
-            it.name = 'forge-releases'
-            it.url = 'https://maven.neoforged.net/releases'
-        }
-    }
-
-    /**
-     * Get a closure for the Forge maven to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
-     * in a repositories block.
-     *
-     * @return a closure
-     */
-    static Closure getForgeSnapshotMaven() {
-        return { MavenArtifactRepository it ->
-            it.name = 'forge-snapshots'
-            it.url = 'https://maven.neoforged.net/snapshots'
-        }
-    }
-
-    /**
-     *
-     */
-    private static Map<String, String> getFilteredInfo(Map<String, String> info, boolean prefix, String filter) {
-        if (prefix)
-            filter += '**'
-        return gitInfo(new File(info.dir as String), filter)
-    }
-
-    /**
      * Returns a version in the form {@code $tag.$offset}, e.g. 1.0.5
      *
      * @param info A git info object generated from {@link #gitInfo}
@@ -215,20 +180,6 @@ class GradleUtils {
      */
     static String getTagOffsetVersion(Map<String, String> info) {
         return "${info.tag}.${info.offset}"
-    }
-
-    /**
-     * Returns a version in the form {@code $tag.$offset}, e.g. 1.0.5.
-     * The provided filter is used to filter the retrieved tag.
-     *
-     * @param info A git info object generated from {@link #gitInfo}
-     * @param prefix If true, will treat the filter as a prefix.
-     * Defaults to false, which means to treat the filter as a glob pattern.
-     * @param filter A non-null string filter used when retrieving the tag
-     * @return a version in the form {@code $tag.$offset}, e.g. 1.0.5
-     */
-    static String getFilteredTagOffsetVersion(Map<String, String> info, boolean prefix = false, String filter) {
-        return getTagOffsetVersion(getFilteredInfo(info, prefix, filter))
     }
 
     /**
@@ -251,22 +202,6 @@ class GradleUtils {
     }
 
     /**
-     * Returns a version in the form {@code $tag.$offset}, optionally with the branch
-     * appended if it is not in the defined list of allowed branches.
-     * The provided filter is used to filter the retrieved tag.
-     *
-     * @param info A git info object generated from {@link #gitInfo}
-     * @param prefix If true, will treat the filter as a prefix.
-     * Defaults to false, which means to treat the filter as a glob pattern.
-     * @param filter A non-null string filter used when retrieving the tag
-     * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
-     * @return a version in the form {@code $tag.$offset} or {@code $tag.$offset-$branch}
-     */
-    static String getFilteredTagOffsetBranchVersion(Map<String, String> info, boolean prefix = false, String filter, String... allowedBranches) {
-        return getTagOffsetBranchVersion(getFilteredInfo(info, prefix, filter), allowedBranches)
-    }
-
-    /**
      * Returns a version in the form {@code $mcVersion-$tag.$offset}, optionally with
      * the branch appended if it is not in the defined list of allowed branches
      *
@@ -279,109 +214,6 @@ class GradleUtils {
         if (!allowedBranches || allowedBranches.length == 0)
             allowedBranches = [null, 'master', 'main', 'HEAD', mcVersion, mcVersion + '.0', mcVersion + '.x', rsplit(mcVersion, '.', 1)[0] + '.x']
         return "$mcVersion-${getTagOffsetBranchVersion(info, allowedBranches)}"
-    }
-
-    /**
-     * Returns a version in the form {@code $mcVersion-$tag.$offset}, optionally with
-     * the branch appended if it is not in the defined list of allowed branches.
-     * The provided filter is used to filter the retrieved tag.
-     *
-     * @param info A git info object generated from {@link #gitInfo}
-     * @param prefix If true, will treat the filter as a prefix.
-     * Defaults to false, which means to treat the filter as a glob pattern.
-     * @param filter A non-null string filter used when retrieving the tag
-     * @param mcVersion The current minecraft version
-     * @param allowedBranches A list of allowed branches; the current branch is appended if not in this list
-     * @return a version in the form {@code $mcVersion-$tag.$offset} or {@code $mcVersion-$tag.$offset-$branch}
-     */
-    static String getFilteredMCTagOffsetBranchVersion(Map<String, String> info, boolean prefix = false, String filter, String mcVersion, String... allowedBranches) {
-        return getMCTagOffsetBranchVersion(getFilteredInfo(info, prefix, filter), mcVersion, allowedBranches)
-    }
-
-    /**
-     * Builds a project url for a project under the minecraft forge organisation.
-     *
-     * @param project The name of the project. (As in the project slug on github).
-     * @return The github url of the project.
-     */
-    static String buildProjectUrl(String project) {
-        return buildProjectUrl("NeoForged", project)
-    }
-
-    /**
-     * Builds a project url for a project under the given organisation.
-     *
-     * @param organisation The name of the org. (As in the org slug on github).
-     * @param project The name of the project. (As in the project slug on github).
-     * @return The github url of the project.
-     */
-    static String buildProjectUrl(String organisation, String project) {
-        return "https://github.com/$organisation/$project"
-    }
-
-    /**
-     * Builds the github url from the origin remotes push uri.
-     * Processes the URI from three different variants into the URL:
-     * 1) If the protocol is http(s) based then ".git" is stripped and returned as url.
-     * 2) If the protocol is ssh and does contain authentication information then the
-     *    username and password are stripped and the url is returned without the ".git"
-     *    ending.
-     * 3) If the protocol is ssh and does not contain authentication information then
-     *    the protocol is switched to https and the ".git" ending is stripped.
-     *
-     * @param projectDir THe project directory.
-     * @return
-     */
-    static String buildProjectUrl(final File projectDir) {
-        Git git = openGit(projectDir) //Create a git workspace.
-
-        def remotes = git.remoteList().call() //Get all remotes.
-        if (remotes.size() == 0)
-            throw new IllegalStateException("No remotes found in " + projectDir)
-
-        //Get the origin remote.
-        def originRemote = remotes.toList().stream()
-            .filter(r -> r.getName().equals("origin"))
-            .findFirst()
-            .orElse(null)
-
-        //We do not have an origin named remote
-        if (originRemote == null)
-        {
-            return ""
-        }
-
-        //Get the origin push url.
-        def originUrl = originRemote.getURIs().toList().stream()
-            .findFirst()
-            .orElse(null)
-
-        //We do not have a origin url
-        if (originUrl == null)
-        {
-            return ""
-        }
-
-        //Grab its string representation and process.
-        def originUrlString = originUrl.toString()
-        //Determine the protocol
-        if (originUrlString.startsWith("ssh")) {
-            //If ssh then check for authentication data.
-            if (originUrlString.contains("@")) {
-                //We have authentication data: Strip it.
-                return "https://" + originUrlString.substring(originUrlString.indexOf("@") + 1).replace(".git", "")
-            } else
-            {
-                //No authentication data: Switch to https.
-                return "https://" + originUrlString.substring(6).replace(".git", "")
-            }
-        } else if (originUrlString.startsWith("http")) {
-            //Standard http protocol: Strip the ".git" ending only.
-            return originUrlString.replace(".git", "")
-        }
-
-        //What other case exists? Just to be sure lets return this.
-        return originUrlString
     }
 
     /**
@@ -430,19 +262,6 @@ class GradleUtils {
         } catch (IOException e) {
             if (projectDir.getParentFile() != null) {
                 return openGit(projectDir.getParentFile(), lastException == null ? e : lastException)
-            } else {
-                throw lastException
-            }
-        }
-    }
-
-    static File getGitDirectory(File projectDir, Throwable lastException = null) {
-        try {
-            Git.open(projectDir)
-            return new File(projectDir, ".git")
-        } catch (IOException ignored) {
-            if (projectDir.getParentFile() != null) {
-                return getGitDirectory(projectDir.getParentFile(), lastException == null ? new IllegalArgumentException("Could not find git directory in or above: " + projectDir.getAbsolutePath()) : lastException)
             } else {
                 throw lastException
             }
