@@ -54,7 +54,7 @@ class ChangelogUtils {
      * @return A multiline changelog string.
      */
     static String generateChangelog(final File projectDirectory, final String repositoryUrl, final boolean justText) {
-        def git = Git.open(projectDirectory) //Grab git from the given project directory.
+        def git = GradleUtils.openGit(projectDirectory) //Grab git from the given project directory.
 
         def headCommit = getHead(git) //Grab the head commit.
         RevCommit logFromCommit = getMergeBaseCommit(git) //Grab the last merge base commit on the current branch.
@@ -77,7 +77,7 @@ class ChangelogUtils {
      * @return A multiline changelog string.
      */
     static String generateChangelog(final File projectDirectory, final String repositoryUrl, final boolean justText, final String sourceTag) {
-        def git = Git.open(projectDirectory) //Grab git from the given project directory.
+        def git = GradleUtils.openGit(projectDirectory) //Grab git from the given project directory.
 
         def tagMap = getTagToCommitMap(git) //Get the tag to commit map so that the beginning commit can be found.
         if (!tagMap.containsKey(sourceTag)) //Check if it even exists.
@@ -101,7 +101,7 @@ class ChangelogUtils {
      * @return A multiline changelog string.
      */
     static String generateChangelogFromCommit(final File projectDirectory, final String repositoryUrl, final boolean justText, final String commitHash) {
-        def git = Git.open(projectDirectory) //Grab git from the given project directory.
+        def git = GradleUtils.openGit(projectDirectory) //Grab git from the given project directory.
 
         def commit = getCommitFromId(git, ObjectId.fromString(commitHash)) //Grab the start commit.
         def headCommit = getHead(git) //Grab the current head commit.
