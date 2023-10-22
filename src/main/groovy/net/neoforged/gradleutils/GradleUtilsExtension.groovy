@@ -81,7 +81,7 @@ abstract class GradleUtilsExtension {
      * @return a version in the form {@code $tag.$offset}, e.g. 1.0.5
      */
     String getFilteredTagOffsetVersion(boolean prefix = false, String filter) {
-        return GradleUtils.getTagOffsetBranchVersion(getFilteredInfo(prefix, filter))
+        return GradleUtils.getTagOffsetVersion(getFilteredInfo(prefix, filter))
     }
 
     /**
