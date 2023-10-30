@@ -42,7 +42,7 @@ public abstract class GenerateChangelogTask extends DefaultTask {
 
     public GenerateChangelogTask() {
         final GradleUtilsExtension extension = getProject().getExtensions().getByType(GradleUtilsExtension.class);
-        getVersionConfig().convention(extension.getVersionConfig());
+        getVersionSpec().convention(extension.getVersionSpec());
         getOutputFile().convention(getProject().getLayout().getBuildDirectory().file("changelog.txt"));
     }
 
@@ -59,13 +59,13 @@ public abstract class GenerateChangelogTask extends DefaultTask {
     public abstract Property<String> getStartingRevision();
 
     @Input
-    public abstract Property<VersionSpec> getVersionConfig();
+    public abstract Property<VersionSpec> getVersionSpec();
 
     @TaskAction
     public void generate() {
         final String startingRev = getStartingRevision().get();
 
-        final String changelog = InternalAccessor.generateChangelog(getProviders(), getVersionConfig().get(),
+        final String changelog = InternalAccessor.generateChangelog(getProviders(), getVersionSpec().get(),
                 getLayout().getProjectDirectory(), startingRev);
 
         final File outputFile = getOutputFile().getAsFile().get();

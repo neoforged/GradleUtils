@@ -50,7 +50,7 @@ abstract class GradleUtilsExtension {
         this.calculatedVersion = providers.of(VersionCalculatorValueSource) {
             it.parameters {
                 it.workingDirectory.set(gitRoot)
-                it.versionConfiguration.set(getVersionConfig())
+                it.versionConfiguration.set(getVersionSpec())
             }
         }
 
@@ -66,7 +66,7 @@ abstract class GradleUtilsExtension {
     abstract DirectoryProperty getGitRoot()
 
     @Nested
-    abstract VersionSpec getVersionConfig()
+    abstract VersionSpec getVersionSpec()
 
     Object getVersion() {
         // This allows lazily calculating the version, only when its needed (someone `toString`s this object)
@@ -79,7 +79,7 @@ abstract class GradleUtilsExtension {
     }
 
     void version(Action<? extends VersionSpec> configureAction) {
-        configureAction.execute(versionConfig)
+        configureAction.execute(versionSpec)
     }
 
     Map<String, String> getGitInfo() {

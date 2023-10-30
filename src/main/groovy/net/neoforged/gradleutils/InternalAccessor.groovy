@@ -28,7 +28,7 @@ class InternalAccessor {
         final changelog = providers.of(ChangelogGeneratorValueSource) {
             it.parameters {
                 it.workingDirectory.set(workingDirectory)
-                it.versionConfiguration.set(versionConfig)
+                it.versionSpec.set(versionConfig)
                 it.earliestRevision.set(earliestRevision)
             }
         }

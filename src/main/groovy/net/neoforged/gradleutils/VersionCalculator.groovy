@@ -25,10 +25,10 @@ class VersionCalculator {
     @PackageScope
     static final char VERSION_SEPARATOR = '.'
 
-    private final VersionSpec config
+    private final VersionSpec spec
 
-    VersionCalculator(VersionSpec config) {
-        this.config = config
+    VersionCalculator(VersionSpec spec) {
+        this.spec = spec
     }
 
     String calculate(Git git, String rev = Constants.HEAD, boolean skipVersionPrefix = false, boolean skipBranchSuffix = false) {
@@ -36,7 +36,7 @@ class VersionCalculator {
 
         String tag = describe.tag
         // Strip label from tag
-        if (config.tags.stripTagLabel.get()) {
+        if (spec.tags.stripTagLabel.get()) {
             final sepIdx = describe.tag.lastIndexOf(GENERAL_SEPARATOR as int)
             if (sepIdx != -1) {
                 tag = describe.tag.substring(0, sepIdx)
@@ -46,14 +46,14 @@ class VersionCalculator {
         // [<prefix>.]<tag>[.<offset>][-<label>][-<branch>]
         StringBuilder version = new StringBuilder()
 
-        @Nullable final prefix = config.versionPrefix.getOrNull()
+        @Nullable final prefix = spec.versionPrefix.getOrNull()
         if (!skipVersionPrefix && prefix != null) {
             version.append(prefix).append(GENERAL_SEPARATOR)
         }
 
         version.append(tag)
 
-        if (config.tags.appendCommitOffset.get()) {
+        if (spec.tags.appendCommitOffset.get()) {
             version.append(VERSION_SEPARATOR).append(describe.offset)
         }
 
@@ -61,7 +61,7 @@ class VersionCalculator {
             version.append(GENERAL_SEPARATOR).append(describe.label)
         }
 
-        if (!skipBranchSuffix && config.branches.suffixBranch.get()) {
+        if (!skipBranchSuffix && spec.branches.suffixBranch.get()) {
             @Nullable final branchSuffix = getBranchSuffix(git)
             if (branchSuffix != null) {
                 version.append(GENERAL_SEPARATOR).append(branchSuffix)
@@ -73,7 +73,7 @@ class VersionCalculator {
 
     private DescribeOutput findTag(Git git, String startingRev) {
         TagContextImpl context = new TagContextImpl()
-        context.label = config.tags.label.getOrNull()
+        context.label = spec.tags.label.getOrNull()
         int trackedCommitCount = 0
         String currentRev = startingRev
 
@@ -84,7 +84,7 @@ class VersionCalculator {
 
             context.tag = describeSplit[0]
             trackedCommitCount += Integer.parseUnsignedInt(describeSplit[1])
-            if (config.tags.extractLabel.get()) {
+            if (spec.tags.extractLabel.get()) {
                 final int separatorIndex = context.tag.lastIndexOf(GENERAL_SEPARATOR as int)
                 // TODO: should we ignore empty labels? (i.e. `1.0-`)
                 if (separatorIndex != -1) {
@@ -92,7 +92,7 @@ class VersionCalculator {
                 }
             }
 
-            @Nullable final markerLabel = config.tags.cleanMarkerLabel.getOrNull()
+            @Nullable final markerLabel = spec.tags.cleanMarkerLabel.getOrNull()
             if (markerLabel == null || !context.endsWithLabel(markerLabel)) break
             // Tag ends with the clean marker label -- reset label to null and continue searching
             context.label = null
@@ -117,7 +117,7 @@ class VersionCalculator {
         final longBranch = head.symbolic ? head?.target?.name : null
 
         String branch = longBranch != null ? Repository.shortenRefName(longBranch) : ''
-        if (branch in config.branches.suffixExemptedBranches.get()) {
+        if (branch in spec.branches.suffixExemptedBranches.get()) {
             // Branch is exempted from suffix
             return null
         }
@@ -137,10 +137,10 @@ class VersionCalculator {
     }
 
     private DescribeCommand describe(Git git) {
-        final includeFilters = config.tags.includeFilters.get().<String> toArray(new String[0])
+        final includeFilters = spec.tags.includeFilters.get().<String> toArray(new String[0])
         return git.describe()
                 .setLong(true)
-                .setTags(config.tags.includeLightweightTags.get())
+                .setTags(spec.tags.includeLightweightTags.get())
                 .setMatch(includeFilters)
     }
 

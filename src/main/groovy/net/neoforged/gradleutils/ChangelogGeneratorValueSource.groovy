@@ -22,14 +22,14 @@ abstract class ChangelogGeneratorValueSource implements ValueSource<String, Para
     static interface Parameters extends ValueSourceParameters {
         DirectoryProperty getWorkingDirectory()
 
-        Property<VersionSpec> getVersionConfiguration()
+        Property<VersionSpec> getVersionSpec()
 
         Property<String> getEarliestRevision()
     }
 
     @Override
     String obtain() {
-        final calculator = new VersionCalculator(parameters.versionConfiguration.get())
+        final calculator = new VersionCalculator(parameters.versionSpec.get())
         final generator = new ChangelogGenerator(calculator)
 
         try (Repository repo = new FileRepositoryBuilder().findGitDir(parameters.workingDirectory.get().asFile).build()) {
