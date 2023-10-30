@@ -571,55 +571,17 @@ class ChangelogUtils {
     }
 
     /**
-     * Sets up the default merge-base based changelog generation on the current project.
-     * Creating the default task, setting it as a dependency of the build task and adding it
-     * as a publishing artifact to any maven publication in the project.
-     *
-     * @param project The project to add changelog generation to.
-     */
-    static void setupChangelogGeneration(final Project project) {
-        //Generate the default task
-        final GenerateChangelogTask task =  project.getTasks().create("createChangelog", GenerateChangelogTask.class)
-
-        //Setup the task as a dependency of the build task.
-        if (project.getTasks().findByName("build") != null) {
-            project.getTasks().getByName("build").dependsOn(task)
-        }
-    }
-
-    /**
      * Sets up the tag based changelog generation on the current project.
      * Creating the default task, setting it as a dependency of the build task and adding it
      * as a publishing artifact to any maven publication in the project.
      *
      * @param project The project to add changelog generation to.
-     * @param tag The name of the tag to start the changelog from.
+     * @param rev The revision to start the changelog from.
      */
-    static void setupChangelogGenerationFromTag(final Project project, final String tag) {
-        //Create the task and configure it for tag based generation.
+    static void setupChangelogGeneration(final Project project, final String rev) {
         final GenerateChangelogTask task = project.getTasks().create("createChangelog", GenerateChangelogTask.class)
-        task.getStartingTag().set(tag)
+        task.getStartingRevision().set(rev)
 
-        //Setup the task as a dependency of the build task.
-        if (project.getTasks().findByName("build") != null) {
-            project.getTasks().getByName("build").dependsOn(task)
-        }
-    }
-
-    /**
-     * Sets up the commit based changelog generation on the current project.
-     * Creating the default task, setting it as a dependency of the build task and adding it
-     * as a publishing artifact to any maven publication in the project.
-     *
-     * @param project The project to add changelog generation to.
-     * @param commit The commit hash to start the changelog from.
-     */
-    static void setupChangelogGenerationFromCommit(final Project project, final String commit) {
-        //Create the task and configure it for commit based generation.
-        final GenerateChangelogTask task = project.getTasks().create("createChangelog", GenerateChangelogTask.class)
-        task.getStartingCommit().set(commit)
-
-        //Setup the task as a dependency of the build task.
         if (project.getTasks().findByName("build") != null) {
             project.getTasks().getByName("build").dependsOn(task)
         }

@@ -6,7 +6,9 @@
 package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
-import org.gradle.api.provider.Provider
+import net.neoforged.gradleutils.specs.VersionSpec
+import org.gradle.api.file.Directory
+import org.gradle.api.provider.ProviderFactory
 
 import javax.annotation.Nullable
 
@@ -17,23 +19,19 @@ import javax.annotation.Nullable
  */
 @CompileStatic
 class InternalAccessor {
-    static String generateChangelog(final File projectDirectory, final String repositoryUrl, final boolean justText) {
-        return ChangelogUtils.generateChangelog(projectDirectory, repositoryUrl, justText)
-    }
-
-    static String generateChangelog(final File projectDirectory, final String repositoryUrl, final boolean justText, final String sourceTag) {
-        return ChangelogUtils.generateChangelog(projectDirectory, repositoryUrl, justText, sourceTag)
-    }
-
-    static String generateChangelogFromCommit(final File projectDirectory, final String repositoryUrl, final boolean justText, final String commitHash) {
-        return ChangelogUtils.generateChangelog(projectDirectory, repositoryUrl, justText, commitHash)
-    }
-
-    static Provider<String> getOriginUrl(final GradleUtilsExtension extension) {
-        return extension.rawInfo.map { it.originUrl }
-    }
-
     static List<String> rsplit(@Nullable String input, String del, int limit = -1) {
         return GradleUtils.rsplit(input, del, limit)
+    }
+
+    static String generateChangelog(ProviderFactory providers, VersionSpec versionConfig, Directory workingDirectory,
+                                    String earliestRevision) {
+        final changelog = providers.of(ChangelogGeneratorValueSource) {
+            it.parameters {
+                it.workingDirectory.set(workingDirectory)
+                it.versionConfiguration.set(versionConfig)
+                it.earliestRevision.set(earliestRevision)
+            }
+        }
+        return changelog.get()
     }
 }

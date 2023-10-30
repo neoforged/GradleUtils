@@ -31,11 +31,7 @@ class VersionCalculator {
         this.config = config
     }
 
-    String calculate(Git git) {
-        return calculate(git, Constants.HEAD)
-    }
-
-    String calculate(Git git, String rev) {
+    String calculate(Git git, String rev = Constants.HEAD, boolean skipVersionPrefix = false, boolean skipBranchSuffix = false) {
         final describe = findTag(git, rev)
 
         String tag = describe.tag
@@ -51,7 +47,7 @@ class VersionCalculator {
         StringBuilder version = new StringBuilder()
 
         @Nullable final prefix = config.versionPrefix.getOrNull()
-        if (prefix != null) {
+        if (!skipVersionPrefix && prefix != null) {
             version.append(prefix).append(GENERAL_SEPARATOR)
         }
 
@@ -65,7 +61,7 @@ class VersionCalculator {
             version.append(GENERAL_SEPARATOR).append(describe.label)
         }
 
-        if (config.branches.suffixBranch.get()) {
+        if (!skipBranchSuffix && config.branches.suffixBranch.get()) {
             @Nullable final branchSuffix = getBranchSuffix(git)
             if (branchSuffix != null) {
                 version.append(GENERAL_SEPARATOR).append(branchSuffix)

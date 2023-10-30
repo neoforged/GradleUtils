@@ -21,24 +21,8 @@ class ChangelogGenerationExtension {
         this.project = project
     }
 
-    void fromMergeBase() {
-        ChangelogUtils.setupChangelogGeneration(project)
-        // These shouldn't be project.afterEvaluate(this::afterEvaluate), otherwise the Groovy compiler crashes
-        // Don't know why, but it's just how it is
-        project.afterEvaluate {
-            afterEvaluate(project)
-        }
-    }
-
-    void fromTag(final String tag) {
-        ChangelogUtils.setupChangelogGenerationFromTag(project, tag)
-        project.afterEvaluate {
-            afterEvaluate(project)
-        }
-    }
-
-    void fromCommit(final String commit) {
-        ChangelogUtils.setupChangelogGenerationFromCommit(project, commit)
+    void from(final String revision) {
+        ChangelogUtils.setupChangelogGeneration(project, revision)
         project.afterEvaluate {
             afterEvaluate(project)
         }

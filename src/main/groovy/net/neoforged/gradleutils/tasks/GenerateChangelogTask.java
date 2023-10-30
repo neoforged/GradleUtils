@@ -20,91 +20,67 @@
 
 package net.neoforged.gradleutils.tasks;
 
-import net.neoforged.gradleutils.GradleUtilsExtension;
 import net.neoforged.gradleutils.InternalAccessor;
+import net.neoforged.gradleutils.NewGradleUtilsExtension;
+import net.neoforged.gradleutils.specs.VersionSpec;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.*;
+import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-public abstract class GenerateChangelogTask extends DefaultTask
-{
+public abstract class GenerateChangelogTask extends DefaultTask {
 
-    public GenerateChangelogTask()
-    {
-        final GradleUtilsExtension extension = getProject().getExtensions().getByType(GradleUtilsExtension.class);
-
-        //Setup defaults: Using merge-base based text changelog generation of the local project into build/changelog.txt
-        // TODO: plugging in the project dir means Gradle tries to track _everything_ in the project dir
-        // need to find a way to circumvent this annoying part -- for now, we rely on this plugin being applied on the 
-        // repository root project
-        getWorkingDirectory().convention(getProject().getLayout().getProjectDirectory().dir(".git"));
-        getBuildMarkdown().convention(false);
+    public GenerateChangelogTask() {
+        final NewGradleUtilsExtension newExtension = getProject().getExtensions().getByType(NewGradleUtilsExtension.class);
+        getVersionConfig().convention(newExtension.getVersionConfig());
         getOutputFile().convention(getProject().getLayout().getBuildDirectory().file("changelog.txt"));
-        getStartingCommit().convention("");
-        getStartingTag().convention("");
-        getProjectUrl().convention(InternalAccessor.getOriginUrl(extension));
-        
-        doNotTrackState("The working directory input prevents proper state tracking");
     }
 
-    @InputDirectory
-    @PathSensitive(PathSensitivity.NONE)
-    public abstract DirectoryProperty getWorkingDirectory();
+    @Inject
+    protected abstract ProjectLayout getLayout();
 
-    @Input
-    public abstract Property<Boolean> getBuildMarkdown();
+    @Inject
+    protected abstract ProviderFactory getProviders();
 
     @OutputFile
     public abstract RegularFileProperty getOutputFile();
 
     @Input
-    public abstract Property<String> getStartingCommit();
+    public abstract Property<String> getStartingRevision();
 
     @Input
-    public abstract Property<String> getStartingTag();
-
-    @Input
-    public abstract Property<String> getProjectUrl();
+    public abstract Property<VersionSpec> getVersionConfig();
 
     @TaskAction
     public void generate() {
-        final String startingCommit = getStartingCommit().getOrElse("");
-        final String startingTag = getStartingTag().getOrElse("");
+        final String startingRev = getStartingRevision().get();
 
-        if (!startingCommit.isEmpty() && !startingTag.isEmpty()) {
-            throw new IllegalStateException("Both starting commit and tag are supplied to the task: " + getName() + ". Only supply one!");
-        }
-
-        String changelog = "";
-        if (startingCommit.isEmpty() && startingTag.isEmpty()) {
-            changelog = InternalAccessor.generateChangelog(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get());
-        }
-        else if (startingCommit.isEmpty())  {
-            changelog = InternalAccessor.generateChangelog(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get(), startingTag);
-        }
-        else {
-            changelog = InternalAccessor.generateChangelogFromCommit(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get(), startingCommit);
-        }
+        final String changelog = InternalAccessor.generateChangelog(getProviders(), getVersionConfig().get(),
+                getLayout().getProjectDirectory(), startingRev);
 
         final File outputFile = getOutputFile().getAsFile().get();
-        outputFile.getParentFile().mkdirs();
+        if (outputFile.getParentFile() != null) {
+            //noinspection ResultOfMethodCallIgnored
+            outputFile.getParentFile().mkdirs();
+        }
         if (outputFile.exists()) {
+            //noinspection ResultOfMethodCallIgnored
             outputFile.delete();
         }
 
-        try
-        {
+        try {
             Files.write(outputFile.toPath(), changelog.getBytes(StandardCharsets.UTF_8));
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new IllegalStateException("Failed to write changelog to file: " + outputFile.getAbsolutePath());
         }
     }
