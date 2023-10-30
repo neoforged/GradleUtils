@@ -20,86 +20,70 @@
 
 package net.neoforged.gradleutils.tasks;
 
-import net.neoforged.gradleutils.ChangelogUtils;
 import net.neoforged.gradleutils.GradleUtilsExtension;
+import net.neoforged.gradleutils.InternalAccessor;
+import net.neoforged.gradleutils.specs.VersionSpec;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.*;
+import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.UntrackedTask;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-public abstract class GenerateChangelogTask extends DefaultTask
-{
+@UntrackedTask(because = "This Git state is not an Input")
+public abstract class GenerateChangelogTask extends DefaultTask {
 
-    public GenerateChangelogTask()
-    {
+    public GenerateChangelogTask() {
         final GradleUtilsExtension extension = getProject().getExtensions().getByType(GradleUtilsExtension.class);
-
-        //Setup defaults: Using merge-base based text changelog generation of the local project into build/changelog.txt
-        getWorkingDirectory().fileValue(getProject().getProjectDir());
-        getBuildMarkdown().convention(false);
+        getVersionSpec().convention(extension.getVersionSpec());
         getOutputFile().convention(getProject().getLayout().getBuildDirectory().file("changelog.txt"));
-        getStartingCommit().convention("");
-        getStartingTag().convention("");
-        getProjectUrl().convention(extension.getOriginUrl());
     }
 
-    @InputDirectory
-    @PathSensitive(PathSensitivity.NONE)
-    public abstract DirectoryProperty getWorkingDirectory();
+    @Inject
+    protected abstract ProjectLayout getLayout();
 
-    @Input
-    public abstract Property<Boolean> getBuildMarkdown();
+    @Inject
+    protected abstract ProviderFactory getProviders();
 
     @OutputFile
     public abstract RegularFileProperty getOutputFile();
 
     @Input
-    public abstract Property<String> getStartingCommit();
+    public abstract Property<String> getStartingRevision();
 
-    @Input
-    public abstract Property<String> getStartingTag();
-
-    @Input
-    public abstract Property<String> getProjectUrl();
+    @Nested
+    public abstract Property<VersionSpec> getVersionSpec();
 
     @TaskAction
     public void generate() {
-        final String startingCommit = getStartingCommit().getOrElse("");
-        final String startingTag = getStartingTag().getOrElse("");
+        final String startingRev = getStartingRevision().get();
 
-        if (!startingCommit.isEmpty() && !startingTag.isEmpty()) {
-            throw new IllegalStateException("Both starting commit and tag are supplied to the task: " + getName() + ". Only supply one!");
-        }
-
-        String changelog = "";
-        if (startingCommit.isEmpty() && startingTag.isEmpty()) {
-            changelog = ChangelogUtils.generateChangelog(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get());
-        }
-        else if (startingCommit.isEmpty())  {
-            changelog = ChangelogUtils.generateChangelog(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get(), startingTag);
-        }
-        else {
-            changelog = ChangelogUtils.generateChangelogFromCommit(getWorkingDirectory().getAsFile().get(), getProjectUrl().get(), !getBuildMarkdown().get(), startingCommit);
-        }
+        final String changelog = InternalAccessor.generateChangelog(getProviders(), getVersionSpec().get(),
+                getLayout().getProjectDirectory(), startingRev);
 
         final File outputFile = getOutputFile().getAsFile().get();
-        outputFile.getParentFile().mkdirs();
+        if (outputFile.getParentFile() != null) {
+            //noinspection ResultOfMethodCallIgnored
+            outputFile.getParentFile().mkdirs();
+        }
         if (outputFile.exists()) {
+            //noinspection ResultOfMethodCallIgnored
             outputFile.delete();
         }
 
-        try
-        {
+        try {
             Files.write(outputFile.toPath(), changelog.getBytes(StandardCharsets.UTF_8));
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new IllegalStateException("Failed to write changelog to file: " + outputFile.getAbsolutePath());
         }
     }

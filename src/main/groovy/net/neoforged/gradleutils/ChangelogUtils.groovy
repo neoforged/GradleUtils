@@ -21,6 +21,7 @@
 package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import net.neoforged.gradleutils.tasks.GenerateChangelogTask
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
@@ -34,14 +35,19 @@ import org.eclipse.jgit.revwalk.filter.RevFilter
 import org.gradle.api.Action
 import org.gradle.api.InvalidUserCodeException
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenArtifact
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.plugins.PublishingPlugin
+import org.gradle.api.tasks.TaskProvider
+import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 import java.util.function.Function
 import java.util.regex.Pattern
 
 @CompileStatic
+@PackageScope
 class ChangelogUtils {
 
     /**
@@ -568,58 +574,26 @@ class ChangelogUtils {
         return commitList.get(commitList.size() - 1)
     }
 
-    /**
-     * Sets up the default merge-base based changelog generation on the current project.
-     * Creating the default task, setting it as a dependency of the build task and adding it
-     * as a publishing artifact to any maven publication in the project.
-     *
-     * @param project The project to add changelog generation to.
-     */
-    static void setupChangelogGeneration(final Project project) {
-        //Generate the default task
-        final GenerateChangelogTask task =  project.getTasks().create("createChangelog", GenerateChangelogTask.class)
-
-        //Setup the task as a dependency of the build task.
-        if (project.getTasks().findByName("build") != null) {
-            project.getTasks().getByName("build").dependsOn(task)
-        }
-    }
-
+    private static final String CHANGELOG_GENERATION_TASK_NAME = 'createChangelog'
+    
     /**
      * Sets up the tag based changelog generation on the current project.
      * Creating the default task, setting it as a dependency of the build task and adding it
      * as a publishing artifact to any maven publication in the project.
      *
      * @param project The project to add changelog generation to.
-     * @param tag The name of the tag to start the changelog from.
+     * @param rev The revision to start the changelog from.
      */
-    static void setupChangelogGenerationFromTag(final Project project, final String tag) {
-        //Create the task and configure it for tag based generation.
-        final GenerateChangelogTask task = project.getTasks().create("createChangelog", GenerateChangelogTask.class)
-        task.getStartingTag().set(tag)
-
-        //Setup the task as a dependency of the build task.
-        if (project.getTasks().findByName("build") != null) {
-            project.getTasks().getByName("build").dependsOn(task)
+    static void setupChangelogGeneration(final Project project, final String rev) {
+        final TaskProvider<GenerateChangelogTask> task = project.getTasks().register(CHANGELOG_GENERATION_TASK_NAME, GenerateChangelogTask.class) {
+            it.startingRevision.set(rev)
         }
-    }
 
-    /**
-     * Sets up the commit based changelog generation on the current project.
-     * Creating the default task, setting it as a dependency of the build task and adding it
-     * as a publishing artifact to any maven publication in the project.
-     *
-     * @param project The project to add changelog generation to.
-     * @param commit The commit hash to start the changelog from.
-     */
-    static void setupChangelogGenerationFromCommit(final Project project, final String commit) {
-        //Create the task and configure it for commit based generation.
-        final GenerateChangelogTask task = project.getTasks().create("createChangelog", GenerateChangelogTask.class)
-        task.getStartingCommit().set(commit)
-
-        //Setup the task as a dependency of the build task.
-        if (project.getTasks().findByName("build") != null) {
-            project.getTasks().getByName("build").dependsOn(task)
+        project.plugins.withType(LifecycleBasePlugin).configureEach {
+            //noinspection UnnecessaryQualifiedReference ASSEMBLE_TASK_NAME is not in scope according to the groovy static compiler even though it should be
+            project.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).configure { Task assembleTask ->
+                assembleTask.dependsOn(task)
+            }
         }
     }
 
@@ -630,44 +604,12 @@ class ChangelogUtils {
      * @param project The project to add changelog generation publishing to.
      */
     static void setupChangelogGenerationOnAllPublishTasks(final Project project) {
-        project.gradle.projectsEvaluated {
-            project.getAllprojects().forEach { innerProject ->
-                if (innerProject.getExtensions().findByName("publishing") == null)
-                    return
-
-                //Grab the extension.
-                final PublishingExtension publishingExtension = innerProject.getExtensions().getByName("publishing") as PublishingExtension
-                //Get each extension and add the publishing task as a publishing artifact.
-                publishingExtension.getPublications().all { publication ->
-                    if (publication instanceof MavenPublication) {
-                        //Add the task as a publishing artifact.
-                        //noinspection UnnecessaryQualifiedReference -> Class cast exception else!
-                        ChangelogUtils.setupChangelogGenerationForPublishing(innerProject, publication as MavenPublication)
-                    }
-                }
+        project.plugins.withType(PublishingPlugin).configureEach {
+            final extension = project.extensions.getByType(PublishingExtension)
+            extension.getPublications().withType(MavenPublication).configureEach { publication ->
+                setupChangelogGenerationForPublishing(project, publication)
             }
         }
-    }
-
-    /**
-     * Finds the nearest `createChangelog` task in the project tree, searching upwards until the root is found.
-     * If no project with the task is found, an error is thrown.
-     *
-     * @param project The project in question.
-     * @return The task.
-     */
-    private static GenerateChangelogTask findNearestChangelogTask(final Project project) {
-        if (project.getParent() == null || project.getParent() == project) {
-            if (project.getTasks().findByName("createChangelog") == null) {
-                throw new IllegalArgumentException("The project tree does not have a createChangelog task.")
-            }
-        }
-
-        if (project.getTasks().findByName("createChangelog") == null) {
-            return findNearestChangelogTask(project.getParent())
-        }
-
-        return project.getTasks().findByName("createChangelog") as GenerateChangelogTask
     }
 
     /**
@@ -693,15 +635,10 @@ class ChangelogUtils {
     }
 
     private static void setupChangelogGenerationForPublishingAfterEvaluation(final Project project, final MavenPublication publication) {
-        //Grab the task
-        final GenerateChangelogTask task = findNearestChangelogTask(project)
-
-        if (task.project.tasks.findByName("build") != null) {
-            task.project.tasks.findByName("build").dependsOn task
-        }
+        def task = project.tasks.named(CHANGELOG_GENERATION_TASK_NAME, GenerateChangelogTask)
 
         //Add a new changelog artifact and publish it.
-        publication.artifact(task.getOutputFile().get(), new Action<MavenArtifact>() {
+        publication.artifact(task.flatMap { it.outputFile }, new Action<MavenArtifact>() {
             @Override
             void execute(final MavenArtifact mavenArtifact) {
                 mavenArtifact.builtBy(task)

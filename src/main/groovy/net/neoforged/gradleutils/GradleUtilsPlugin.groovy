@@ -24,6 +24,7 @@ import groovy.transform.CompileStatic
 import net.neoforged.gradleutils.tasks.ExtractTeamCityProjectConfigurationTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 @CompileStatic
 class GradleUtilsPlugin implements Plugin<Project> {
