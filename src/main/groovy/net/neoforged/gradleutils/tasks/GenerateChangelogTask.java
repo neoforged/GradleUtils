@@ -32,7 +32,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.work.DisableCachingByDefault;
+import org.gradle.api.tasks.UntrackedTask;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -40,7 +40,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-@DisableCachingByDefault(because = "The Git state is not an Input therefore we can't cache this task for now")
+@UntrackedTask(because = "This Git state is not an Input")
 public abstract class GenerateChangelogTask extends DefaultTask {
 
     public GenerateChangelogTask() {
