@@ -38,6 +38,7 @@ import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenArtifact
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
@@ -601,18 +602,10 @@ class ChangelogUtils {
      * @param project The project to add changelog generation publishing to.
      */
     static void setupChangelogGenerationOnAllPublishTasks(final Project project) {
-        project.gradle.projectsEvaluated {
-            project.getAllprojects().forEach { innerProject ->
-                if (innerProject.getExtensions().findByName("publishing") == null)
-                    return
-
-                //Grab the extension.
-                final PublishingExtension publishingExtension = innerProject.getExtensions().getByName("publishing") as PublishingExtension
-                //Get each extension and add the publishing task as a publishing artifact.
-                publishingExtension.getPublications().withType(MavenPublication).configureEach { publication ->
-                    //Add the task as a publishing artifact.
-                    setupChangelogGenerationForPublishing(innerProject, publication)
-                }
+        project.plugins.withType(PublishingPlugin).configureEach {
+            final extension = project.extensions.getByType(PublishingExtension)
+            extension.getPublications().withType(MavenPublication).configureEach { publication ->
+                setupChangelogGenerationForPublishing(project, publication)
             }
         }
     }
