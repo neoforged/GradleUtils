@@ -21,6 +21,7 @@
 package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import net.neoforged.gradleutils.specs.VersionSpec
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -37,17 +38,29 @@ import javax.inject.Inject
 abstract class NewGradleUtilsExtension {
     private final Project project
     private final Provider<String> calculatedVersion
+    @PackageScope
+    final Provider<GitInfoValueSource.GitInfo> rawInfo
+    private final Provider<Map<String, String>> gitInfo
 
     @Inject
     NewGradleUtilsExtension(Project project, ProjectLayout layout, ProviderFactory providers) {
         this.project = project
         gitRoot.convention(layout.projectDirectory)
-        calculatedVersion = providers.of(VersionCalculatorValueSource) {
+
+        this.calculatedVersion = providers.of(VersionCalculatorValueSource) {
             it.parameters {
                 it.workingDirectory.set(gitRoot)
                 it.versionConfiguration.set(getVersionConfig())
             }
         }
+
+        this.rawInfo = project.providers.of(GitInfoValueSource) {
+            it.parameters {
+                it.workingDirectory.set(this.gitRoot)
+            }
+        }
+        this.gitInfo = project.objects.mapProperty(String, String)
+                .convention(rawInfo.map { it.gitInfo })
     }
 
     abstract DirectoryProperty getGitRoot()
@@ -67,6 +80,10 @@ abstract class NewGradleUtilsExtension {
 
     void version(Action<? extends VersionSpec> configureAction) {
         configureAction.execute(versionConfig)
+    }
+
+    Map<String, String> getGitInfo() {
+        return gitInfo.get()
     }
 
     Action<? extends MavenArtifactRepository> publishingMaven(File defaultFolder = project.rootProject.file('repo')) {
