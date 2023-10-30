@@ -20,8 +20,8 @@
 
 package net.neoforged.gradleutils.tasks;
 
-import net.neoforged.gradleutils.InternalAccessor;
 import net.neoforged.gradleutils.GradleUtilsExtension;
+import net.neoforged.gradleutils.InternalAccessor;
 import net.neoforged.gradleutils.specs.VersionSpec;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ProjectLayout;
