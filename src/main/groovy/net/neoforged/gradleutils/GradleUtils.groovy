@@ -26,6 +26,7 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Repository
+import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
@@ -103,7 +104,7 @@ class GradleUtils {
      * @param defaultFolder The default folder if the required maven information is not currently set
      * @return a closure
      */
-    static Closure getPublishingForgeMaven(Project project, File defaultFolder = project.rootProject.file('repo')) {
+    static Action<? extends MavenArtifactRepository> getPublishingForgeMaven(Project project, File defaultFolder = project.rootProject.file('repo')) {
         return setupSnapshotCompatiblePublishing(project, 'https://maven.neoforged.net/releases', defaultFolder)
     }
 
@@ -128,7 +129,7 @@ class GradleUtils {
      * @param defaultFolder The default folder if the required maven information is not currently set
      * @return a closure
      */
-    static Closure setupSnapshotCompatiblePublishing(Project project, String fallbackPublishingEndpoint = 'https://maven.neoforged.net/releases', File defaultFolder = project.rootProject.file('repo'), File defaultSnapshotFolder = project.rootProject.file('snapshots')) {
+    static Action<? extends MavenArtifactRepository> setupSnapshotCompatiblePublishing(Project project, String fallbackPublishingEndpoint = 'https://maven.neoforged.net/releases', File defaultFolder = project.rootProject.file('repo'), File defaultSnapshotFolder = project.rootProject.file('snapshots')) {
         return { MavenArtifactRepository it ->
             it.name = 'forge'
             if (System.getenv('MAVEN_USER') && System.getenv('MAVEN_PASSWORD')) {
@@ -165,7 +166,7 @@ class GradleUtils {
      *
      * @return a closure
      */
-    static Closure getForgeMaven() {
+    static Action<? extends MavenArtifactRepository> getForgeMaven() {
         return { MavenArtifactRepository it ->
             it.name = 'forge'
             it.url = 'https://maven.neoforged.net/releases'

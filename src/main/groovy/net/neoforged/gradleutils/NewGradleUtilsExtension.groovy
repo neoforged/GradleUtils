@@ -21,9 +21,10 @@
 package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
-import groovy.transform.PackageScope
 import net.neoforged.gradleutils.specs.VersionSpec
 import org.gradle.api.Action
+import org.gradle.api.Project
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ProjectLayout
 import org.gradle.api.provider.Provider
@@ -34,10 +35,12 @@ import javax.inject.Inject
 
 @CompileStatic
 abstract class NewGradleUtilsExtension {
+    private final Project project
     private final Provider<String> calculatedVersion
 
     @Inject
-    NewGradleUtilsExtension(ProjectLayout layout, ProviderFactory providers) {
+    NewGradleUtilsExtension(Project project, ProjectLayout layout, ProviderFactory providers) {
+        this.project = project
         gitRoot.convention(layout.projectDirectory)
         calculatedVersion = providers.of(VersionCalculatorValueSource) {
             it.parameters {
@@ -64,5 +67,14 @@ abstract class NewGradleUtilsExtension {
 
     void version(Action<? extends VersionSpec> configureAction) {
         configureAction.execute(versionConfig)
+    }
+
+    Action<? extends MavenArtifactRepository> publishingMaven(File defaultFolder = project.rootProject.file('repo')) {
+        return GradleUtils.getPublishingForgeMaven(project, defaultFolder)
+    }
+
+    @SuppressWarnings('GrMethodMayBeStatic')
+    Action<? extends MavenArtifactRepository> maven() {
+        return GradleUtils.getForgeMaven()
     }
 }

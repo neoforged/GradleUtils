@@ -22,7 +22,9 @@ package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
+import org.gradle.api.Action
 import org.gradle.api.Project
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Provider
@@ -149,7 +151,7 @@ abstract class GradleUtilsExtension {
      * @param defaultFolder The default folder if the required maven information is not currently set
      * @return a closure
      */
-    Closure getPublishingForgeMaven(File defaultFolder = project.rootProject.file('repo')) {
+    Action<? extends MavenArtifactRepository> getPublishingForgeMaven(File defaultFolder = project.rootProject.file('repo')) {
         return GradleUtils.getPublishingForgeMaven(project, defaultFolder)
     }
 
@@ -159,7 +161,7 @@ abstract class GradleUtilsExtension {
      *
      * @return a closure
      */
-    Closure getForgeMaven() {
+    Action<? extends MavenArtifactRepository> getForgeMaven() {
         return GradleUtils.getForgeMaven()
     }
 }
