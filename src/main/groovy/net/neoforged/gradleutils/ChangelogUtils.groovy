@@ -35,6 +35,7 @@ import org.eclipse.jgit.revwalk.filter.RevFilter
 import org.gradle.api.Action
 import org.gradle.api.InvalidUserCodeException
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenArtifact
 import org.gradle.api.publish.maven.MavenPublication
@@ -589,8 +590,9 @@ class ChangelogUtils {
         }
 
         project.plugins.withType(LifecycleBasePlugin).configureEach {
-            project.tasks.named(ASSEMBLE_TASK_NAME).configure {
-                it.dependsOn(task)
+            //noinspection UnnecessaryQualifiedReference ASSEMBLE_TASK_NAME is not in scope according to the groovy static compiler even though it should be
+            project.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).configure { Task assembleTask ->
+                assembleTask.dependsOn(task)
             }
         }
     }
