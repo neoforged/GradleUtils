@@ -9,7 +9,9 @@ import groovy.transform.CompileStatic
 import net.neoforged.gradleutils.InternalAccessor
 import org.gradle.api.Action
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Nested
+import org.gradle.api.tasks.Optional
 
 @CompileStatic
 abstract class VersionSpec {
@@ -28,6 +30,8 @@ abstract class VersionSpec {
     }
 
     // Prefixed to version, separated with a '-' (hyphen)
+    @Input
+    @Optional
     abstract Property<String> getVersionPrefix();
 
     // Specific to NeoForge; sets the version prefix to the Minecraft version and adds exempted branches for the MC version
