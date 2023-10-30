@@ -30,8 +30,6 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 class GradleUtilsPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
-        project.getPlugins().apply(LifecycleBasePlugin)
-        
         GradleUtilsExtension extension = project.extensions.create("gradleutils", GradleUtilsExtension.class, project)
         ChangelogGenerationExtension changelogGenerationExtension = project.extensions.create("changelog", ChangelogGenerationExtension.class, project)
 
