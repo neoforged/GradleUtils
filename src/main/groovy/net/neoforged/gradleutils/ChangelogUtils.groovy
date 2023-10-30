@@ -587,7 +587,7 @@ class ChangelogUtils {
             it.startingRevision.set(rev)
         }
 
-        project.tasks.named(LifecycleBasePlugin.BUILD_TASK_NAME).configure {
+        project.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).configure {
             it.dependsOn(task)
         }
     }
