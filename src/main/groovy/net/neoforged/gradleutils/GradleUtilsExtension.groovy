@@ -26,8 +26,10 @@ import net.neoforged.gradleutils.specs.VersionSpec
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ProjectLayout
+import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.Nested
@@ -36,15 +38,17 @@ import javax.inject.Inject
 
 @CompileStatic
 abstract class GradleUtilsExtension {
-    private final Project project
+    private final Directory rootProjectDir
+    private final Provider<String> projectVersion
     private final Provider<String> calculatedVersion
     @PackageScope
     final Provider<GitInfoValueSource.GitInfo> rawInfo
     private final Provider<Map<String, String>> gitInfo
 
     @Inject
-    GradleUtilsExtension(Project project, ProjectLayout layout, ProviderFactory providers) {
-        this.project = project
+    GradleUtilsExtension(Project project, ProjectLayout layout, ObjectFactory objects, ProviderFactory providers) {
+        this.projectVersion = project.provider { project.version.toString() }
+        this.rootProjectDir = project.rootProject.layout.projectDirectory
         gitRoot.convention(layout.projectDirectory)
 
         this.calculatedVersion = providers.of(VersionCalculatorValueSource) {
@@ -54,12 +58,12 @@ abstract class GradleUtilsExtension {
             }
         }
 
-        this.rawInfo = project.providers.of(GitInfoValueSource) {
+        this.rawInfo = providers.of(GitInfoValueSource) {
             it.parameters {
                 it.workingDirectory.set(this.gitRoot)
             }
         }
-        this.gitInfo = project.objects.mapProperty(String, String)
+        this.gitInfo = objects.mapProperty(String, String)
                 .convention(rawInfo.map { it.gitInfo })
     }
 
@@ -86,12 +90,13 @@ abstract class GradleUtilsExtension {
         return gitInfo.get()
     }
 
-    Action<? extends MavenArtifactRepository> publishingMaven(File defaultFolder = project.rootProject.file('repo')) {
-        return GradleUtils.getPublishingForgeMaven(project, defaultFolder)
+    Action<? extends MavenArtifactRepository> getPublishingMaven(File defaultFolder = rootProjectDir.file('repo').asFile) {
+        return GradleUtils.setupSnapshotCompatiblePublishing(projectVersion, 'https://maven.neoforged.net/releases', 
+                defaultFolder, rootProjectDir.file('snapshot').asFile)
     }
 
     @SuppressWarnings('GrMethodMayBeStatic')
-    Action<? extends MavenArtifactRepository> maven() {
+    Action<? extends MavenArtifactRepository> getMaven() {
         return GradleUtils.getForgeMaven()
     }
 }

@@ -31,6 +31,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 import org.gradle.authentication.http.BasicAuthentication
@@ -92,24 +93,6 @@ class GradleUtils {
 
     /**
      * Get a closure to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
-     * in a publishing block.
-     *
-     * Important the following environment variables must be set for this to work:
-     *  - MAVEN_USER: Containing the username to use for authentication
-     *  - MAVEN_PASSWORD: Containing the password to use for authentication
-     *  - MAVEN_URL_RELEASE: Containing the URL to use for the release repository
-     *  - MAVEN_URL_SNAPSHOT: Containing the URL to use for the snapshot repository
-     *
-     * @param project The project
-     * @param defaultFolder The default folder if the required maven information is not currently set
-     * @return a closure
-     */
-    static Action<? extends MavenArtifactRepository> getPublishingForgeMaven(Project project, File defaultFolder = project.rootProject.file('repo')) {
-        return setupSnapshotCompatiblePublishing(project, 'https://maven.neoforged.net/releases', defaultFolder)
-    }
-
-    /**
-     * Get a closure to be passed into {@link org.gradle.api.artifacts.dsl.RepositoryHandler#maven(groovy.lang.Closure)}
      * in a publishing block, this closure respects the current project's version, with regards to publishing to a release
      * or snapshot repository.
      *
@@ -123,22 +106,22 @@ class GradleUtils {
      *
      * If the MAVEN_URL_RELEASE is not set the passed in fallback URL will be used for the release repository.
      * By default this is: https://maven.neoforged.net/releases
-     * This is done to preserve backwards compatibility with the old {@link #getPublishingForgeMaven(Project, File)} method.
      *
      * @param project The project
      * @param defaultFolder The default folder if the required maven information is not currently set
      * @return a closure
      */
-    static Action<? extends MavenArtifactRepository> setupSnapshotCompatiblePublishing(Project project, String fallbackPublishingEndpoint = 'https://maven.neoforged.net/releases', File defaultFolder = project.rootProject.file('repo'), File defaultSnapshotFolder = project.rootProject.file('snapshots')) {
+    static Action<? extends MavenArtifactRepository> setupSnapshotCompatiblePublishing(Provider<String> projectVersion, String fallbackPublishingEndpoint = 'https://maven.neoforged.net/releases', File defaultFolder, File defaultSnapshotFolder) {
         return { MavenArtifactRepository it ->
             it.name = 'forge'
+            String version = projectVersion.get()
             if (System.getenv('MAVEN_USER') && System.getenv('MAVEN_PASSWORD')) {
                 def publishingEndpoint = fallbackPublishingEndpoint
                 if (System.getenv('MAVEN_URL_RELEASE')) {
                     publishingEndpoint = System.getenv('MAVEN_URL_RELEASE')
                 }
 
-                if (project.version.toString().endsWith("-SNAPSHOT") && System.getenv('MAVEN_URL_SNAPSHOTS')) {
+                if (version.endsWith("-SNAPSHOT") && System.getenv('MAVEN_URL_SNAPSHOTS')) {
                     it.url = System.getenv('MAVEN_URL_SNAPSHOTS')
                 } else {
                     it.url = publishingEndpoint
@@ -151,7 +134,7 @@ class GradleUtils {
                     credentials.password = System.getenv('MAVEN_PASSWORD')
                 }
             } else {
-                if (project.version.toString().endsWith("-SNAPSHOT")) {
+                if (version.endsWith("-SNAPSHOT")) {
                     it.url = 'file://' + defaultSnapshotFolder.getAbsolutePath()
                 } else {
                     it.url = 'file://' + defaultFolder.getAbsolutePath()
