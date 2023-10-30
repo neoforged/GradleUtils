@@ -30,7 +30,6 @@ class GradleUtilsPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         GradleUtilsExtension extension = project.extensions.create("gradleutils", GradleUtilsExtension.class, project)
-        NewGradleUtilsExtension newExtension = project.extensions.create("ngu", NewGradleUtilsExtension)
         ChangelogGenerationExtension changelogGenerationExtension = project.extensions.create("changelog", ChangelogGenerationExtension.class, project)
 
         //Setup the teamcity project task.

@@ -21,7 +21,7 @@
 package net.neoforged.gradleutils.tasks;
 
 import net.neoforged.gradleutils.InternalAccessor;
-import net.neoforged.gradleutils.NewGradleUtilsExtension;
+import net.neoforged.gradleutils.GradleUtilsExtension;
 import net.neoforged.gradleutils.specs.VersionSpec;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ProjectLayout;
@@ -41,8 +41,8 @@ import java.nio.file.Files;
 public abstract class GenerateChangelogTask extends DefaultTask {
 
     public GenerateChangelogTask() {
-        final NewGradleUtilsExtension newExtension = getProject().getExtensions().getByType(NewGradleUtilsExtension.class);
-        getVersionConfig().convention(newExtension.getVersionConfig());
+        final GradleUtilsExtension extension = getProject().getExtensions().getByType(GradleUtilsExtension.class);
+        getVersionConfig().convention(extension.getVersionConfig());
         getOutputFile().convention(getProject().getLayout().getBuildDirectory().file("changelog.txt"));
     }
 
