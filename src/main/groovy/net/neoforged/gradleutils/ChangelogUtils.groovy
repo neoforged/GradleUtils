@@ -38,6 +38,8 @@ import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenArtifact
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.TaskProvider
+import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 import java.util.function.Function
 import java.util.regex.Pattern
@@ -570,6 +572,8 @@ class ChangelogUtils {
         return commitList.get(commitList.size() - 1)
     }
 
+    private static final String CHANGELOG_GENERATION_TASK_NAME = 'createChangelog'
+    
     /**
      * Sets up the tag based changelog generation on the current project.
      * Creating the default task, setting it as a dependency of the build task and adding it
@@ -579,11 +583,12 @@ class ChangelogUtils {
      * @param rev The revision to start the changelog from.
      */
     static void setupChangelogGeneration(final Project project, final String rev) {
-        final GenerateChangelogTask task = project.getTasks().create("createChangelog", GenerateChangelogTask.class)
-        task.getStartingRevision().set(rev)
+        final TaskProvider<GenerateChangelogTask> task = project.getTasks().register(CHANGELOG_GENERATION_TASK_NAME, GenerateChangelogTask.class) {
+            it.startingRevision.set(rev)
+        }
 
-        if (project.getTasks().findByName("build") != null) {
-            project.getTasks().getByName("build").dependsOn(task)
+        project.tasks.named(LifecycleBasePlugin.BUILD_TASK_NAME).configure {
+            it.dependsOn(task)
         }
     }
 
@@ -602,36 +607,12 @@ class ChangelogUtils {
                 //Grab the extension.
                 final PublishingExtension publishingExtension = innerProject.getExtensions().getByName("publishing") as PublishingExtension
                 //Get each extension and add the publishing task as a publishing artifact.
-                publishingExtension.getPublications().all { publication ->
-                    if (publication instanceof MavenPublication) {
-                        //Add the task as a publishing artifact.
-                        //noinspection UnnecessaryQualifiedReference -> Class cast exception else!
-                        ChangelogUtils.setupChangelogGenerationForPublishing(innerProject, publication as MavenPublication)
-                    }
+                publishingExtension.getPublications().withType(MavenPublication).configureEach { publication ->
+                    //Add the task as a publishing artifact.
+                    setupChangelogGenerationForPublishing(innerProject, publication)
                 }
             }
         }
-    }
-
-    /**
-     * Finds the nearest `createChangelog` task in the project tree, searching upwards until the root is found.
-     * If no project with the task is found, an error is thrown.
-     *
-     * @param project The project in question.
-     * @return The task.
-     */
-    private static GenerateChangelogTask findNearestChangelogTask(final Project project) {
-        if (project.getParent() == null || project.getParent() == project) {
-            if (project.getTasks().findByName("createChangelog") == null) {
-                throw new IllegalArgumentException("The project tree does not have a createChangelog task.")
-            }
-        }
-
-        if (project.getTasks().findByName("createChangelog") == null) {
-            return findNearestChangelogTask(project.getParent())
-        }
-
-        return project.getTasks().findByName("createChangelog") as GenerateChangelogTask
     }
 
     /**
@@ -657,15 +638,10 @@ class ChangelogUtils {
     }
 
     private static void setupChangelogGenerationForPublishingAfterEvaluation(final Project project, final MavenPublication publication) {
-        //Grab the task
-        final GenerateChangelogTask task = findNearestChangelogTask(project)
-
-        if (task.project.tasks.findByName("build") != null) {
-            task.project.tasks.findByName("build").dependsOn task
-        }
+        def task = project.tasks.named(CHANGELOG_GENERATION_TASK_NAME, GenerateChangelogTask)
 
         //Add a new changelog artifact and publish it.
-        publication.artifact(task.getOutputFile().get(), new Action<MavenArtifact>() {
+        publication.artifact(task.flatMap { it.outputFile }, new Action<MavenArtifact>() {
             @Override
             void execute(final MavenArtifact mavenArtifact) {
                 mavenArtifact.builtBy(task)
