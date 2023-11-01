@@ -21,8 +21,10 @@ repositories {
 }
 
 if (System.getenv('GPP_KEY')) {
-    project.setProperty('gradle.publish.key', System.getenv('GPP_KEY'))
-    project.setProperty('gradle.publish.secret', System.getenv('GPP_SECRET'))
+    project.ext {
+        set('gradle.publish.key', System.getenv('GPP_KEY'))
+        set('gradle.publish.secret', System.getenv('GPP_SECRET'))
+    }
 }
 
 dependencies {
