@@ -21,17 +21,10 @@
 package net.neoforged.gradleutils.tasks;
 
 import org.eclipse.jgit.api.Git;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.UnknownDomainObjectException;
-import org.gradle.api.file.DirectoryProperty;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.maven.MavenPublication;
-import org.gradle.api.tasks.InputDirectory;
-import org.gradle.api.tasks.PathSensitive;
-import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.util.GradleVersion;
 
 import java.io.File;
@@ -49,47 +42,18 @@ import java.util.zip.ZipInputStream;
 /**
  * Task to extract the TeamCity project configuration from the included template zpi file and the github remote information.
  */
-public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTask
-{
+public abstract class ExtractTeamCityProjectConfigurationTask extends CIConfigExtractionTask {
 
-    public ExtractTeamCityProjectConfigurationTask()
-    {
-        getDestination().convention(getProject().getRootProject().getLayout().getProjectDirectory().dir(getProject().provider(() -> "./")));
-
-        setGroup("publishing");
+    public ExtractTeamCityProjectConfigurationTask() {
+        super(".teamcity.zip", ".teamcity");
         setDescription("Creates (or recreates) a default TeamCity project configuration directory for use with the MinecraftForge TeamCity server.");
     }
 
-    @InputDirectory
-    @PathSensitive(PathSensitivity.NONE)
-    public abstract DirectoryProperty getDestination();
-
     @TaskAction
-    public void run() throws Exception
-    {
-        //Get the destination directory (by default the current root project directory)
-        final File destDir = getDestination().getAsFile().get();
-        //Grab the target directory, to check if it exists.
-        final File teamcityDir = new File(destDir, ".teamcity");
-
-        //Export the zip file from our resources.
-        String fileZip = exportResource();
-
-        //Check if the directory exists, if so then delete it.
-        if (teamcityDir.exists())
-        {
-            //Try to delete it.
-            if (!teamcityDir.delete())
-            {
-                //Something went really wrong....
-                throw new IllegalStateException("Could not delete the existing .teamcity project directory!");
-            }
-        }
-
-        //Extract the zip from our runtime file.
-        extractTeamCityZip(fileZip, destDir);
-        //Replace the default project ids, with ours.
-        replaceTeamCityTestProjectIds(destDir);
+    public void run() throws Exception {
+        super.run();
+        //Replace the default project ids with ours.
+        replaceTeamCityTestProjectIds(getDestination().getAsFile().get());
     }
 
     /**
@@ -98,8 +62,8 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
      * @param fileZip The teamcity zip file.
      * @param destDir The target directory (generally the project directory), where the .teamcity.zip file will be extracted.
      */
-    private static void extractTeamCityZip(final String fileZip, final File destDir) throws Exception
-    {
+    @Override
+    protected void extractZip(final String fileZip, final File destDir) throws Exception {
         byte[] buffer = new byte[1024];
         ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip));
         ZipEntry zipEntry = zis.getNextEntry();
@@ -131,83 +95,21 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
     }
 
     /**
-     * Extracts the .teamcity.zip file from our plugin jar.
-     *
-     * @return The path to the file.
-     */
-    private static String exportResource() throws Exception
-    {
-        InputStream stream = null;
-        OutputStream resStreamOut = null;
-        String jarFolder;
-        try {
-            stream = ExtractTeamCityProjectConfigurationTask.class.getResourceAsStream("/.teamcity.zip");//note that each / is a directory down in the "jar tree" been the jar the root of the tree
-            if(stream == null) {
-                throw new Exception("Cannot get resource \"" + ".teamcity.zip" + "\" from Jar file.");
-            }
-
-            int readBytes;
-            byte[] buffer = new byte[4096];
-            jarFolder = new File(ExtractTeamCityProjectConfigurationTask.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParentFile().getPath().replace('\\', '/');
-            resStreamOut = new FileOutputStream(jarFolder + ".teamcity.zip");
-            while ((readBytes = stream.read(buffer)) > 0) {
-                resStreamOut.write(buffer, 0, readBytes);
-            }
-        }
-        finally {
-            if (stream != null)
-            {
-                stream.close();
-            }
-            if (resStreamOut != null)
-            {
-                resStreamOut.close();
-            }
-        }
-
-        return jarFolder + ".teamcity.zip";
-    }
-
-    /**
-     * Creates a new file or directory, used during the extraction of the .teamcity.zip file.
-     *
-     * @param destinationDir The target directory.
-     * @param zipEntry The entry in the .teamcity.zip file.
-     * @return The new file or directory.
-     */
-    private static File newFile(File destinationDir, ZipEntry zipEntry) throws Exception
-    {
-        File destFile = new File(destinationDir, zipEntry.getName());
-
-        String destDirPath = destinationDir.getCanonicalPath();
-        String destFilePath = destFile.getCanonicalPath();
-
-        if (!destFilePath.startsWith(destDirPath + File.separator)) {
-            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
-        }
-
-        return destFile;
-    }
-
-    /**
      * Parses the existing .teamcity directory files for "TeamCityTest" and replaces it with a new project id,
      * generated by checking the first remote on the current git project.
      *
      * @param projectDir The project directory to run the replacement in.
      */
     @SuppressWarnings("ReadWriteStringCanBeUsed") //We still need to support older versions of the JDK.
-    private void replaceTeamCityTestProjectIds(final File projectDir) throws Exception
-    {
+    private void replaceTeamCityTestProjectIds(final File projectDir) throws Exception {
         try (final Git git = Git.open(projectDir)) {
             final String projectId = determineGitHubProjectName(git);
             final File teamcityDir = new File(projectDir, ".teamcity");
-            if (!teamcityDir.exists())
-            {
+            if (!teamcityDir.exists()) {
                 return;
             }
 
-            for (final File file : Objects.requireNonNull(teamcityDir.listFiles((dir, name) -> name.endsWith("kts"))))
-            {
+            for (final File file : Objects.requireNonNull(teamcityDir.listFiles((dir, name) -> name.endsWith("kts")))) {
                 String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
                 content = content.replaceAll("%projectName%", projectId);
                 content = content.replaceAll("%projectOrg%", determineGitHubProjectOrganisation(git));
@@ -223,26 +125,13 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
                 projectGroup = "MinecraftForge_" + projectGroup;
             }
 
-            for (final File file : Objects.requireNonNull(teamcityDir.listFiles((dir, name) -> name.endsWith("xml"))))
-            {
+            for (final File file : Objects.requireNonNull(teamcityDir.listFiles((dir, name) -> name.endsWith("xml")))) {
                 String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
                 content = content.replaceAll("%projectName%", projectId);
                 content = content.replaceAll("%projectGroup%", projectGroup);
                 Files.write(file.toPath(), content.getBytes(StandardCharsets.UTF_8));
             }
         }
-    }
-
-    private String determineJDKVersion() {
-        if (getProject().getExtensions().findByType(JavaPluginExtension.class) == null) {
-            getProject().getLogger().warn("Could not find the Java extension, falling back to JDK 8.");
-            return "8";
-        }
-
-        return getProject().getExtensions().getByType(JavaPluginExtension.class)
-                .getToolchain().getLanguageVersion()
-                .orElse(getProject().provider(() -> JavaLanguageVersion.of(8)))
-                .get().toString();
     }
 
     private String determineArtifactId(String projectId) {
@@ -253,19 +142,18 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
 
         try {
             return getProject().getExtensions().getByType(PublishingExtension.class)
-              .getPublications()
-              .stream()
-              .filter(MavenPublication.class::isInstance)
-              .map(MavenPublication.class::cast)
-              .filter(publication -> !publication.getName().contains("PluginMarker")) //Exclude gradles plugin markers!
-              .findFirst()
-              .map(MavenPublication::getArtifactId)
-              .orElseGet(() -> {
-                  getProject().getLogger().warn("Could not find the Maven artifact Id from normal publication falling back to the lower cased project name.");
-                  return projectId.toLowerCase();
-              });
-        }
-        catch (UnknownDomainObjectException unknownDomainObjectException) {
+                    .getPublications()
+                    .stream()
+                    .filter(MavenPublication.class::isInstance)
+                    .map(MavenPublication.class::cast)
+                    .filter(publication -> !publication.getName().contains("PluginMarker")) //Exclude gradles plugin markers!
+                    .findFirst()
+                    .map(MavenPublication::getArtifactId)
+                    .orElseGet(() -> {
+                        getProject().getLogger().warn("Could not find the Maven artifact Id from normal publication falling back to the lower cased project name.");
+                        return projectId.toLowerCase();
+                    });
+        } catch (UnknownDomainObjectException unknownDomainObjectException) {
             getProject().getLogger().warn("Could not find the Maven publication extension, falling back to the lower cased project name.");
             return projectId.toLowerCase();
         }
@@ -280,19 +168,18 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
 
         try {
             return getProject().getExtensions().getByType(PublishingExtension.class)
-              .getPublications()
-              .stream()
-              .filter(MavenPublication.class::isInstance)
-              .map(MavenPublication.class::cast)
-              .filter(publication -> !publication.getName().contains("PluginMarker")) //Exclude gradles plugin markers!
-              .findFirst()
-              .map(MavenPublication::getGroupId)
-              .orElseGet(() -> {
-                  getProject().getLogger().warn("Could not find the Maven artifact Id from normal publication falling back to the lower cased project group.");
-                  return fallback.toLowerCase();
-              });
-        }
-        catch (UnknownDomainObjectException unknownDomainObjectException) {
+                    .getPublications()
+                    .stream()
+                    .filter(MavenPublication.class::isInstance)
+                    .map(MavenPublication.class::cast)
+                    .filter(publication -> !publication.getName().contains("PluginMarker")) //Exclude gradles plugin markers!
+                    .findFirst()
+                    .map(MavenPublication::getGroupId)
+                    .orElseGet(() -> {
+                        getProject().getLogger().warn("Could not find the Maven artifact Id from normal publication falling back to the lower cased project group.");
+                        return fallback.toLowerCase();
+                    });
+        } catch (UnknownDomainObjectException unknownDomainObjectException) {
             getProject().getLogger().warn("Could not find the Maven publication extension, falling back to the lower cased project group.");
             return fallback.toLowerCase();
         }
@@ -305,8 +192,7 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
      * @param git the project git
      * @return The project name of the project on github.
      */
-    private static String determineGitHubProjectName(final Git git) throws Exception
-    {
+    private static String determineGitHubProjectName(final Git git) throws Exception {
         final String repositoryPath = git.remoteList().call().get(0).getURIs().get(0).getPath();
 
         return repositoryPath.substring(repositoryPath.lastIndexOf("/") + 1).replace(".git", "");
@@ -319,8 +205,7 @@ public abstract class ExtractTeamCityProjectConfigurationTask extends DefaultTas
      * @param git the project git
      * @return The organisation name of the project on github.
      */
-    private static String determineGitHubProjectOrganisation(final Git git) throws Exception
-    {
+    private static String determineGitHubProjectOrganisation(final Git git) throws Exception {
         final String repositoryPath = git.remoteList().call().get(0).getURIs().get(0).getPath();
 
         final String[] pathMembers = repositoryPath.split("/");

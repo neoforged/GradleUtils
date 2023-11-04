@@ -22,6 +22,8 @@ package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
+import io.github.gradlenexus.publishplugin.NexusPublishExtension
+import io.github.gradlenexus.publishplugin.NexusPublishPlugin
 import net.neoforged.gradleutils.specs.VersionSpec
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -30,14 +32,20 @@ import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ProjectLayout
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
+import org.gradle.api.publish.Publication
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Nested
+import org.gradle.plugins.signing.SigningExtension
+import org.gradle.plugins.signing.SigningPlugin
 
 import javax.inject.Inject
 
 @CompileStatic
 abstract class GradleUtilsExtension {
+    private final Project project
     private final Directory rootProjectDir
     private final Provider<String> projectVersion
     private final Provider<String> calculatedVersion
@@ -47,6 +55,7 @@ abstract class GradleUtilsExtension {
 
     @Inject
     GradleUtilsExtension(Project project, ProjectLayout layout, ObjectFactory objects, ProviderFactory providers) {
+        this.project = project
         this.projectVersion = project.provider { project.version.toString() }
         this.rootProjectDir = project.rootProject.layout.projectDirectory
         gitRoot.convention(layout.projectDirectory)
@@ -65,12 +74,17 @@ abstract class GradleUtilsExtension {
         }
         this.gitInfo = objects.mapProperty(String, String)
                 .convention(rawInfo.map { it.gitInfo })
+
+        shouldSign.convention(project.provider { (System.getenv('GPG_PRIVATE_KEY') && System.getenv('GPG_KEY_PASSWORD')) || new File(project.gradle.gradleUserHomeDir, 'secring.gpg').exists() })
     }
 
     abstract DirectoryProperty getGitRoot()
 
     @Nested
     abstract VersionSpec getVersionSpec()
+
+    @Input
+    abstract Property<Boolean> getShouldSign()
 
     Object getVersion() {
         // This allows lazily calculating the version, only when its needed (someone `toString`s this object)
@@ -98,5 +112,47 @@ abstract class GradleUtilsExtension {
     @SuppressWarnings('GrMethodMayBeStatic')
     Action<? extends MavenArtifactRepository> getMaven() {
         return GradleUtils.getForgeMaven()
+    }
+
+    void setupCentralPublishing() {
+        if (project.rootProject.name != project.name) {
+            throw new UnsupportedOperationException('The nexus publishing plugin can only be applied on the root project!')
+        }
+
+        project.plugins.apply(NexusPublishPlugin)
+        project.extensions.configure(NexusPublishExtension) { ext ->
+            ext.repositories { container ->
+                container.sonatype {
+                    it.username.set(System.getenv('SONATYPE_USER') ?: '')
+                    it.password.set(System.getenv('SONATYPE_PASSWORD') ?: '')
+                    it.nexusUrl.set(URI.create('https://s01.oss.sonatype.org/service/local/'))
+                }
+            }
+        }
+    }
+
+    void sign(Publication publication) {
+        project.afterEvaluate {
+            if (shouldSign.get()) {
+                project.extensions.configure(SigningExtension) { ext ->
+                    ext.sign(publication)
+                }
+            }
+        }
+    }
+
+    void setupSigning(Project project = this.project) {
+        project.plugins.apply(SigningPlugin)
+        project.afterEvaluate {
+            if (shouldSign.get()) {
+                project.extensions.configure(SigningExtension) { signing ->
+                    final signingKey = System.getenv('GPG_PRIVATE_KEY') ?: ''
+                    final signingPassword = System.getenv('GPG_KEY_PASSWORD') ?: ''
+                    if (signingKey && signingPassword) {
+                        signing.useInMemoryPgpKeys(signingKey, signingPassword)
+                    }
+                }
+            }
+        }
     }
 }

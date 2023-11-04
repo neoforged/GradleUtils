@@ -21,10 +21,10 @@
 package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
+import net.neoforged.gradleutils.tasks.ExtractActionsWorkflowsTask
 import net.neoforged.gradleutils.tasks.ExtractTeamCityProjectConfigurationTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 @CompileStatic
 class GradleUtilsPlugin implements Plugin<Project> {
@@ -33,8 +33,11 @@ class GradleUtilsPlugin implements Plugin<Project> {
         GradleUtilsExtension extension = project.extensions.create("gradleutils", GradleUtilsExtension.class, project)
         ChangelogGenerationExtension changelogGenerationExtension = project.extensions.create("changelog", ChangelogGenerationExtension.class, project)
 
-        //Setup the teamcity project task.
-        project.getTasks().register("setupTeamCityProject", ExtractTeamCityProjectConfigurationTask.class)
+        project.extensions.create('pomUtils', PomUtilsExtension)
+
+        //Setup the CI project task.
+        project.tasks.register("setupTeamCityProject", ExtractTeamCityProjectConfigurationTask.class)
+        project.tasks.register("setupGitHubActionsWorkflows", ExtractActionsWorkflowsTask.class)
         GradleUtils.setupCITasks(project)
     }
 }
