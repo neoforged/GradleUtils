@@ -75,7 +75,7 @@ abstract class GradleUtilsExtension {
         this.gitInfo = objects.mapProperty(String, String)
                 .convention(rawInfo.map { it.gitInfo })
 
-        shouldSign.convention(project.provider { (System.getenv('GPG_PRIVATE_KEY') && System.getenv('GPG_KEY_PASSWORD')) || new File(project.gradle.gradleUserHomeDir, 'secring.gpg').exists() })
+        shouldSign.convention(project.provider { (System.getenv('GPG_PRIVATE_KEY') || System.getenv('GPG_SUBKEY')) || new File(project.gradle.gradleUserHomeDir, 'secring.gpg').exists() })
     }
 
     abstract DirectoryProperty getGitRoot()
@@ -146,10 +146,17 @@ abstract class GradleUtilsExtension {
         project.afterEvaluate {
             if (shouldSign.get()) {
                 project.extensions.configure(SigningExtension) { signing ->
-                    final signingKey = System.getenv('GPG_PRIVATE_KEY') ?: ''
-                    final signingPassword = System.getenv('GPG_KEY_PASSWORD') ?: ''
+                    var signingKey = System.getenv('GPG_PRIVATE_KEY') ?: ''
+                    var signingPassword = System.getenv('GPG_KEY_PASSWORD') ?: ''
                     if (signingKey && signingPassword) {
                         signing.useInMemoryPgpKeys(signingKey, signingPassword)
+                    } else {
+                        signingKey = System.getenv('GPG_SUBKEY') ?: ''
+                        signingPassword = System.getenv('GPG_SUBKEY_PASSWORD') ?: ''
+                        final keyId = System.getenv('GPG_SUBKEY_ID')
+                        if (keyId && signingKey && signingPassword) {
+                            signing.useInMemoryPgpKeys(keyId, signingKey, signingPassword)
+                        }
                     }
                 }
             }
