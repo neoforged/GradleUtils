@@ -102,14 +102,14 @@ public abstract class CIConfigExtractionTask extends DefaultTask {
         OutputStream resStreamOut = null;
         String jarFolder;
         try {
-            stream = ExtractTeamCityProjectConfigurationTask.class.getResourceAsStream("/" + templateZipName);//note that each / is a directory down in the "jar tree" been the jar the root of the tree
+            stream = CIConfigExtractionTask.class.getResourceAsStream("/" + templateZipName);//note that each / is a directory down in the "jar tree" been the jar the root of the tree
             if (stream == null) {
                 throw new Exception("Cannot get resource \"" + templateZipName + "\" from Jar file.");
             }
 
             int readBytes;
             byte[] buffer = new byte[4096];
-            jarFolder = new File(ExtractTeamCityProjectConfigurationTask.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParentFile().getPath().replace('\\', '/');
+            jarFolder = new File(CIConfigExtractionTask.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParentFile().getPath().replace('\\', '/');
             resStreamOut = new FileOutputStream(jarFolder + templateZipName);
             while ((readBytes = stream.read(buffer)) > 0) {
                 resStreamOut.write(buffer, 0, readBytes);

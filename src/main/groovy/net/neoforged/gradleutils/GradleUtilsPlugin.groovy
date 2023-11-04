@@ -22,7 +22,6 @@ package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
 import net.neoforged.gradleutils.tasks.ExtractActionsWorkflowsTask
-import net.neoforged.gradleutils.tasks.ExtractTeamCityProjectConfigurationTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -36,7 +35,6 @@ class GradleUtilsPlugin implements Plugin<Project> {
         project.extensions.create('pomUtils', PomUtilsExtension)
 
         //Setup the CI project task.
-        project.tasks.register("setupTeamCityProject", ExtractTeamCityProjectConfigurationTask.class)
         project.tasks.register("setupGitHubActionsWorkflows", ExtractActionsWorkflowsTask.class)
         GradleUtils.setupCITasks(project)
     }

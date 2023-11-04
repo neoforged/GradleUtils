@@ -34,14 +34,7 @@ dependencies {
 }
 
 sourceSets {
-    teamcityTemplate
     actionsTemplate
-}
-
-final teamcityTemplateZip = tasks.register('createTeamcityTemplateZip', Zip) {
-    from(sourceSets.teamcityTemplate.output)
-    archiveFileName.set('.teamcity.zip')
-    destinationDirectory.set(layout.buildDirectory.dir('template'))
 }
 
 final actionsTemplateZip = tasks.register('createActionsTemplateZip', Zip) {
@@ -51,7 +44,6 @@ final actionsTemplateZip = tasks.register('createActionsTemplateZip', Zip) {
 }
 
 tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
-    from(teamcityTemplateZip)
     from(actionsTemplateZip)
 }
 
@@ -61,11 +53,9 @@ license {
 }
 
 // Disable the license tasks for the template files
-['Actions', 'Teamcity'].each { type ->
-    ["checkLicense${type}Template", "updateLicense${type}Template"].each {
-        tasks.named(it) {
-            enabled = false
-        }
+["checkLicenseActionsTemplate", "updateLicenseActionsTemplate"].each {
+    tasks.named(it) {
+        enabled = false
     }
 }
 
