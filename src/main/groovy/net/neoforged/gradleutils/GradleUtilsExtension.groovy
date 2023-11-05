@@ -76,7 +76,8 @@ abstract class GradleUtilsExtension {
         this.gitInfo = objects.mapProperty(String, String)
                 .convention(rawInfo.map { it.gitInfo })
 
-        shouldSign.convention(project.provider { (System.getenv('GPG_PRIVATE_KEY') || System.getenv('GPG_SUBKEY')) || new File(project.gradle.gradleUserHomeDir, 'secring.gpg').exists() })
+        final possibleSecring = providers.gradleProperty('signing.secretKeyRingFile')
+        shouldSign.convention(project.provider { (System.getenv('GPG_PRIVATE_KEY') || System.getenv('GPG_SUBKEY')) || possibleSecring.getOrNull() })
     }
 
     abstract DirectoryProperty getGitRoot()
