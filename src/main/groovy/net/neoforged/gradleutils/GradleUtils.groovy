@@ -34,6 +34,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.UntrackedTask
 import org.gradle.authentication.http.BasicAuthentication
 
 import javax.annotation.Nullable
@@ -240,6 +241,7 @@ class GradleUtils {
         }
     }
 
+    @UntrackedTask(because = 'We always want to configure CI')
     abstract static class ConfigureTeamCity extends DefaultTask {
         @Input
         abstract Property<String> getVersion()
@@ -254,6 +256,7 @@ class GradleUtils {
         }
     }
 
+    @UntrackedTask(because = 'We always want to configure CI')
     abstract static class ConfigureActions extends DefaultTask {
         @Input
         abstract Property<String> getVersion()
