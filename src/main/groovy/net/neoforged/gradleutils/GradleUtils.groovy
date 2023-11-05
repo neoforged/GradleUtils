@@ -241,7 +241,7 @@ class GradleUtils {
         }
     }
 
-    @UntrackedTask(because = 'We always want to configure CI')
+    @UntrackedTask(because = 'CI configuration should always run in every build')
     abstract static class ConfigureTeamCity extends DefaultTask {
         @Input
         abstract Property<String> getVersion()
@@ -256,7 +256,7 @@ class GradleUtils {
         }
     }
 
-    @UntrackedTask(because = 'We always want to configure CI')
+    @UntrackedTask(because = 'CI configuration should always run in every build')
     abstract static class ConfigureActions extends DefaultTask {
         @Input
         abstract Property<String> getVersion()
