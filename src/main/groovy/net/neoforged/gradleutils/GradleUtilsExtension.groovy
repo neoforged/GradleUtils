@@ -38,6 +38,7 @@ import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.publish.Publication
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Nested
+import org.gradle.api.tasks.Optional
 import org.gradle.plugins.signing.SigningExtension
 import org.gradle.plugins.signing.SigningPlugin
 
@@ -45,7 +46,7 @@ import javax.inject.Inject
 
 @CompileStatic
 abstract class GradleUtilsExtension {
-    private final Project project
+    private transient Project project
     private final Directory rootProjectDir
     private final Provider<String> projectVersion
     private final Provider<String> calculatedVersion
@@ -115,7 +116,7 @@ abstract class GradleUtilsExtension {
     }
 
     void setupCentralPublishing() {
-        if (project.rootProject.name != project.name) {
+        if (project.rootProject !== project) {
             throw new UnsupportedOperationException('The nexus publishing plugin can only be applied on the root project!')
         }
 
@@ -153,7 +154,7 @@ abstract class GradleUtilsExtension {
                     } else {
                         signingKey = System.getenv('GPG_SUBKEY') ?: ''
                         signingPassword = System.getenv('GPG_SUBKEY_PASSWORD') ?: ''
-                        final keyId = System.getenv('GPG_SUBKEY_ID')
+                        final keyId = System.getenv('GPG_SUBKEY_ID') ?: ''
                         if (keyId && signingKey && signingPassword) {
                             signing.useInMemoryPgpKeys(keyId, signingKey, signingPassword)
                         }

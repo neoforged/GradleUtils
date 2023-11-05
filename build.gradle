@@ -126,8 +126,8 @@ publishing {
             if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
                 def publishingEndpoint = System.env.MAVEN_URL_RELEASE ?: 'https://maven.neoforged.net/releases'
 
-                if (project.version.toString().endsWith("-SNAPSHOT") && System.env.MAVEN_URL_SNAPSHOTS) {
-                    url System.env.MAVEN_URL_SNAPSHOTS
+                if (project.version.toString().endsWith('-SNAPSHOT')) {
+                    url System.env.MAVEN_URL_SNAPSHOTS ?: 'https://maven.neoforged.net/snapshots'
                 } else {
                     url publishingEndpoint
                 }
