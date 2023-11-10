@@ -18,6 +18,7 @@ version '3.0.0-alpha.4-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 if (System.getenv('GPP_KEY')) {
@@ -29,20 +30,21 @@ if (System.getenv('GPP_KEY')) {
 
 dependencies {
     api 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
+    api 'io.github.gradle-nexus:publish-plugin:1.3.0'
 }
 
 sourceSets {
-    teamcityTemplate
+    actionsTemplate
 }
 
-def teamcityTemplateZip = tasks.register('createTeamcityTemplateZip', Zip) {
-    from(sourceSets.teamcityTemplate.output)
-    archiveFileName.set('.teamcity.zip')
+final actionsTemplateZip = tasks.register('createActionsTemplateZip', Zip) {
+    from(sourceSets.actionsTemplate.output)
+    archiveFileName.set('.github-workflows.zip')
     destinationDirectory.set(layout.buildDirectory.dir('template'))
 }
 
 tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
-    from(teamcityTemplateZip)
+    from(actionsTemplateZip)
 }
 
 license {
@@ -50,8 +52,8 @@ license {
     skipExistingHeaders = true // Ignore existing license headers on files
 }
 
-// Disable the license tasks for the TeamCity template files
-['checkLicenseTeamcityTemplate', 'updateLicenseTeamcityTemplate'].each {
+// Disable the license tasks for the template files
+["checkLicenseActionsTemplate", "updateLicenseActionsTemplate"].each {
     tasks.named(it) {
         enabled = false
     }
@@ -124,8 +126,8 @@ publishing {
             if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
                 def publishingEndpoint = System.env.MAVEN_URL_RELEASE ?: 'https://maven.neoforged.net/releases'
 
-                if (project.version.toString().endsWith("-SNAPSHOT") && System.env.MAVEN_URL_SNAPSHOTS) {
-                    url System.env.MAVEN_URL_SNAPSHOTS
+                if (project.version.toString().endsWith('-SNAPSHOT')) {
+                    url System.env.MAVEN_URL_SNAPSHOTS ?: 'https://maven.neoforged.net/snapshots'
                 } else {
                     url publishingEndpoint
                 }
@@ -144,7 +146,7 @@ publishing {
 }
 
 final versionProvider = providers.provider { project.version?.toString() }
-tasks.register("configureActions", ConfigureActions) {
+tasks.register("configureGitHubActions", ConfigureActions) {
     version.set(versionProvider)
 }
 

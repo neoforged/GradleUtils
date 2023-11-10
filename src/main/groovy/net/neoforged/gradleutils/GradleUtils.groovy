@@ -34,6 +34,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.UntrackedTask
 import org.gradle.authentication.http.BasicAuthentication
 
 import javax.annotation.Nullable
@@ -206,9 +207,8 @@ class GradleUtils {
      * @param project The project to configure them on.
      */
     static void setupCITasks(Project project) {
-        //Future proofing.
-        //For now we only support the TeamCity environment
         setupTeamCityTasks(project)
+        setupActionsTasks(project)
     }
 
     /**
@@ -226,6 +226,22 @@ class GradleUtils {
         }
     }
 
+    /**
+     * Sets up the GitHub Action CI tasks.
+     *
+     * @param project the project to configure it on
+     */
+    private static void setupActionsTasks(Project project) {
+        if (System.getenv('GITHUB_ACTION')) {
+            // Only setup the CI environment if and only if the environment variables are set.
+            final versionProvider = project.provider { project.version?.toString() }
+            project.tasks.register("configureGitHubActions", ConfigureActions) {
+                it.version.set(versionProvider)
+            }
+        }
+    }
+
+    @UntrackedTask(because = 'CI configuration should always run in every build')
     abstract static class ConfigureTeamCity extends DefaultTask {
         @Input
         abstract Property<String> getVersion()
@@ -237,6 +253,20 @@ class GradleUtils {
             logger.lifecycle("Setting project variables and parameters.")
             println "##teamcity[buildNumber '${versionString}']"
             println "##teamcity[setParameter name='env.PUBLISHED_JAVA_ARTIFACT_VERSION' value='${versionString}']"
+        }
+    }
+
+    @UntrackedTask(because = 'CI configuration should always run in every build')
+    abstract static class ConfigureActions extends DefaultTask {
+        @Input
+        abstract Property<String> getVersion()
+
+        @TaskAction
+        void doAction() {
+            final versionString = version.get()
+            // Print marker lines into the log which configure the pipeline
+            logger.lifecycle("Setting project variables and parameters.")
+            new File(System.getenv('GITHUB_OUTPUT')) << "version=$versionString"
         }
     }
 
