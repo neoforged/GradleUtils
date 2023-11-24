@@ -21,6 +21,7 @@
 package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
+import groovy.transform.NamedVariant
 import groovy.transform.PackageScope
 import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import io.github.gradlenexus.publishplugin.NexusPublishPlugin
@@ -36,9 +37,10 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.publish.Publication
+import org.gradle.api.publish.PublicationContainer
+import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Nested
-import org.gradle.api.tasks.Optional
 import org.gradle.plugins.signing.SigningExtension
 import org.gradle.plugins.signing.SigningPlugin
 
@@ -133,17 +135,30 @@ abstract class GradleUtilsExtension {
         }
     }
 
-    void sign(Publication publication) {
+    void sign(Publication publication, Project project = this.project) {
+        ifSigning({
+            it.sign(publication)
+        }, project)
+    }
+
+    void signAllPublications(PublicationContainer container, Project project = this.project) {
+        ifSigning({
+            it.sign(container)
+        }, project)
+    }
+
+    private void ifSigning(Action<SigningExtension> action, Project project = this.project) {
         project.afterEvaluate {
             if (shouldSign.get()) {
                 project.extensions.configure(SigningExtension) { ext ->
-                    ext.sign(publication)
+                    action.execute(ext)
                 }
             }
         }
     }
 
-    void setupSigning(Project project = this.project) {
+    @NamedVariant
+    void setupSigning(Project project = this.project, boolean signAllPublications = false) {
         project.plugins.apply(SigningPlugin)
         project.afterEvaluate {
             if (shouldSign.get()) {
@@ -162,6 +177,10 @@ abstract class GradleUtilsExtension {
                     }
                 }
             }
+        }
+
+        if (signAllPublications) {
+            this.signAllPublications(project.extensions.getByType(PublishingExtension).publications)
         }
     }
 }
