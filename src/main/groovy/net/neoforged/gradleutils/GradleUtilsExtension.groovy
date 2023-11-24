@@ -147,7 +147,7 @@ abstract class GradleUtilsExtension {
         }, project)
     }
 
-    void ifSigning(Action<SigningExtension> action, Project project = this.project) {
+    private void ifSigning(Action<SigningExtension> action, Project project = this.project) {
         project.afterEvaluate {
             if (shouldSign.get()) {
                 project.extensions.configure(SigningExtension) { ext ->
