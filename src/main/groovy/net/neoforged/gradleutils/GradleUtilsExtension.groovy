@@ -25,6 +25,8 @@ import groovy.transform.NamedVariant
 import groovy.transform.PackageScope
 import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import io.github.gradlenexus.publishplugin.NexusPublishPlugin
+import net.minecraftforge.gdi.annotations.DSLProperty
+import net.minecraftforge.gdi.annotations.ProjectGetter
 import net.neoforged.gradleutils.specs.VersionSpec
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -82,12 +84,15 @@ abstract class GradleUtilsExtension {
         shouldSign.convention(project.provider { (System.getenv('GPG_PRIVATE_KEY') || System.getenv('GPG_SUBKEY')) || possibleSecring.getOrNull() })
     }
 
+    @DSLProperty
     abstract DirectoryProperty getGitRoot()
 
     @Nested
+    @DSLProperty
     abstract VersionSpec getVersionSpec()
 
     @Input
+    @DSLProperty
     abstract Property<Boolean> getShouldSign()
 
     Object getVersion() {
@@ -183,4 +188,7 @@ abstract class GradleUtilsExtension {
             this.signAllPublications(project.extensions.getByType(PublishingExtension).publications)
         }
     }
+
+    @ProjectGetter // for the git root property
+    private Project project() { project }
 }
