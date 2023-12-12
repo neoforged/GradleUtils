@@ -14,7 +14,7 @@ java {
 }
 
 group 'net.neoforged.gradleutils'
-version '3.0.0-alpha.5'
+version '3.0.0-alpha.6'
 
 repositories {
     mavenCentral()
@@ -31,6 +31,10 @@ if (System.getenv('GPP_KEY')) {
 dependencies {
     api 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
     api 'io.github.gradle-nexus:publish-plugin:1.3.0'
+
+    api "net.neoforged:groovydslimprover:${gdi_version}"
+    api "net.neoforged:groovydslimprover:${gdi_version}:base"
+    api "net.neoforged:groovydslimprover:${gdi_version}:runtime"
 }
 
 sourceSets {
