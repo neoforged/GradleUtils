@@ -185,7 +185,7 @@ abstract class GradleUtilsExtension {
         }
 
         if (signAllPublications) {
-            this.signAllPublications(project.extensions.getByType(PublishingExtension).publications)
+            this.signAllPublications(project.extensions.getByType(PublishingExtension).publications, project)
         }
     }
 
