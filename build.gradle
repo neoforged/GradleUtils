@@ -22,12 +22,13 @@ repositories {
             excludeGroup('com.diffplug.spotless')
         }
     }
-    gradlePluginPortal {
-        metadataSources {
-            // Spotless requires J11, so ignore the Gradle metadata as otherwise the dependency wouldn't be resolved
-            ignoreGradleMetadataRedirection()
-            mavenPom()
-        }
+    gradlePluginPortal()
+}
+
+// Spotless runs on J11
+configurations {
+    compileClasspath {
+        attributes.attribute Attribute.of('org.gradle.jvm.version', Integer), 11
     }
 }
 
