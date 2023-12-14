@@ -14,11 +14,21 @@ java {
 }
 
 group 'net.neoforged.gradleutils'
-version '3.0.0-alpha.7'
+version '3.0.0-alpha.7-spotless'
 
 repositories {
-    mavenCentral()
-    gradlePluginPortal()
+    mavenCentral {
+        content {
+            excludeGroup('com.diffplug.spotless')
+        }
+    }
+    gradlePluginPortal {
+        metadataSources {
+            // Spotless requires J11, so ignore the Gradle metadata as otherwise the dependency wouldn't be resolved
+            ignoreGradleMetadataRedirection()
+            mavenPom()
+        }
+    }
 }
 
 if (System.getenv('GPP_KEY')) {
@@ -35,6 +45,8 @@ dependencies {
     api "net.neoforged:groovydslimprover:${gdi_version}"
     api "net.neoforged:groovydslimprover:${gdi_version}:base"
     api "net.neoforged:groovydslimprover:${gdi_version}:runtime"
+
+    compileOnly 'com.diffplug.spotless:spotless-plugin-gradle:6.23.3'
 }
 
 sourceSets {
@@ -54,6 +66,7 @@ tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
 license {
     header(file('HEADER'))
     skipExistingHeaders = true // Ignore existing license headers on files
+    exclude 'formatter-config.xml'
 }
 
 // Disable the license tasks for the template files
