@@ -41,6 +41,8 @@ import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.publish.Publication
 import org.gradle.api.publish.PublicationContainer
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
+import org.gradle.api.services.BuildServiceSpec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Nested
 import org.gradle.plugins.signing.SigningExtension
@@ -64,6 +66,7 @@ abstract class GradleUtilsExtension {
         this.projectVersion = project.provider { project.version.toString() }
         this.rootProjectDir = project.rootProject.layout.projectDirectory
         gitRoot.convention(layout.projectDirectory)
+        getEnableMavenPublicationSummary().convention(true);
 
         this.calculatedVersion = providers.of(VersionCalculatorValueSource) {
             it.parameters {
@@ -82,6 +85,31 @@ abstract class GradleUtilsExtension {
 
         final possibleSecring = providers.gradleProperty('signing.secretKeyRingFile')
         shouldSign.convention(project.provider { (System.getenv('GPG_PRIVATE_KEY') || System.getenv('GPG_SUBKEY')) || possibleSecring.getOrNull() })
+
+        // Set up reporting of published maven artifacts
+        def reportingServiceProvider = project.getGradle().getSharedServices().registerIfAbsent(
+                "gradleUtilsMavenReporting",
+                ReportMavenPublications.class,
+                (BuildServiceSpec<ReportMavenPublications.Params> spec) -> {
+                    spec.getParameters().getEnabled().set(getEnableMavenPublicationSummary())
+                }
+        )
+        project.tasks.withType(AbstractPublishToMaven).configureEach {
+            configureRecordMavenPublication(it, reportingServiceProvider)
+        }
+    }
+
+    /*
+     * Reconfigures a publish task to record its published publication in the shared build service for
+     * generating report at the end of the build.
+     */
+    private static void configureRecordMavenPublication(AbstractPublishToMaven configureTask, Provider<ReportMavenPublications> serviceProvider) {
+        configureTask.usesService(serviceProvider)
+        configureTask.doLast("recordPublication") { task ->
+            def publication = ((AbstractPublishToMaven) task).publication
+            def reportingService = serviceProvider.get()
+            reportingService.record(publication.groupId, publication.artifactId, publication.version)
+        }
     }
 
     @DSLProperty
@@ -94,6 +122,13 @@ abstract class GradleUtilsExtension {
     @Input
     @DSLProperty
     abstract Property<Boolean> getShouldSign()
+
+    /**
+     * When enabled (the default), we report all published Maven publications at the end of the build. This
+     * is intended to make it easier to see which version was actually published.
+     */
+    @Input
+    abstract Property<Boolean> getEnableMavenPublicationSummary();
 
     Object getVersion() {
         // This allows lazily calculating the version, only when its needed (someone `toString`s this object)
@@ -114,7 +149,7 @@ abstract class GradleUtilsExtension {
     }
 
     Action<? extends MavenArtifactRepository> getPublishingMaven(File defaultFolder = rootProjectDir.file('repo').asFile) {
-        return GradleUtils.setupSnapshotCompatiblePublishing(projectVersion, 'https://maven.neoforged.net/releases', 
+        return GradleUtils.setupSnapshotCompatiblePublishing(projectVersion, 'https://maven.neoforged.net/releases',
                 defaultFolder, rootProjectDir.file('snapshot').asFile)
     }
 
