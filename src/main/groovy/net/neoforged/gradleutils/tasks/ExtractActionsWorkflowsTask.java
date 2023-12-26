@@ -86,7 +86,7 @@ public abstract class ExtractActionsWorkflowsTask extends CIConfigExtractionTask
         return this.withPRPublishing;
     }
 
-    @Option(option = "with-pr-publishing", description = "If the workflow for publishing PRs should be enabled")
+    @Option(option = "pr-publishing", description = "If the workflow for publishing PRs should be enabled")
     public void setWithPRPublishing(boolean withPRPublishing) {
         this.withPRPublishing = withPRPublishing;
     }
