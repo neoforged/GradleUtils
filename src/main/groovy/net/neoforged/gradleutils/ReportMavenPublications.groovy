@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull
  */
 @CompileStatic
 abstract class ReportMavenPublications implements BuildService<Params>, AutoCloseable {
-    private List<Publication> artifacts = Collections.synchronizedList(new ArrayList<>())
+    private final List<Publication> artifacts = Collections.synchronizedList(new ArrayList<>())
 
     void record(String groupId, String artifactId, String version) {
         artifacts.add(new Publication(
@@ -49,7 +49,7 @@ abstract class ReportMavenPublications implements BuildService<Params>, AutoClos
         println("=" * 80)
         println()
         for (final def artifact in sortedArtifacts) {
-            println("  $artifact.groupId:$artifact.artifactId:$artifact.version")
+            println("\t$artifact.groupId:$artifact.artifactId:$artifact.version")
         }
         println()
     }

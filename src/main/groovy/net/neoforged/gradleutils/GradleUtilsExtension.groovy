@@ -128,6 +128,7 @@ abstract class GradleUtilsExtension {
      * is intended to make it easier to see which version was actually published.
      */
     @Input
+    @DSLProperty
     abstract Property<Boolean> getEnableMavenPublicationSummary();
 
     Object getVersion() {
