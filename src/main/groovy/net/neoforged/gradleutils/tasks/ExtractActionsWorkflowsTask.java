@@ -6,6 +6,9 @@
 package net.neoforged.gradleutils.tasks;
 
 import groovy.text.GStringTemplateEngine;
+import org.gradle.api.plugins.BasePluginExtension;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.options.Option;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,6 +18,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -39,6 +43,15 @@ public abstract class ExtractActionsWorkflowsTask extends CIConfigExtractionTask
         final Map<String, Object> binding = new HashMap<>();
         binding.put("project", getProject());
         binding.put("jdkVersion", determineJDKVersion());
+        binding.put("commonGroup", findCommonSubstring(
+                getProject().getAllprojects().stream()
+                        .filter(project -> !project.getGroup().toString().isEmpty())
+                        .map(project -> project.getGroup() + "/" + project.getExtensions().getByType(BasePluginExtension.class).getArchivesName().get() + "/")
+                        .map(group -> group.replace('.', '/')) // Replace dots with slashes in the group
+                        .collect(Collectors.toList())
+        ));
+        binding.put("withPRPublishing", withPRPublishing);
+
         final GStringTemplateEngine engine = new GStringTemplateEngine();
         ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip));
         ZipEntry zipEntry = zis.getNextEntry();
@@ -64,5 +77,17 @@ public abstract class ExtractActionsWorkflowsTask extends CIConfigExtractionTask
         }
         zis.closeEntry();
         zis.close();
+    }
+
+    private boolean withPRPublishing;
+
+    @Input
+    public boolean getWithPRPublishing() {
+        return this.withPRPublishing;
+    }
+
+    @Option(option = "with-pr-publishing", description = "If the workflow for publishing PRs should be enabled")
+    public void setWithPRPublishing(boolean withPRPublishing) {
+        this.withPRPublishing = withPRPublishing;
     }
 }
