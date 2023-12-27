@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -47,7 +48,7 @@ public abstract class CIConfigExtractionTask extends DefaultTask {
         String fileZip = exportResource();
 
         //Check if the directory exists, if so then delete it.
-        if (targetDir.exists() && !disableDeletion) {
+        if (targetDir.exists() && deleteExisting) {
             boolean couldDelete = true;
             for (File file : targetDir.listFiles()) {
                 couldDelete &= file.delete();
@@ -131,20 +132,20 @@ public abstract class CIConfigExtractionTask extends DefaultTask {
         return jarFolder + templateZipName;
     }
 
-    private boolean disableDeletion;
+    private boolean deleteExisting;
 
     @Input
-    public boolean getDisableDeletion() {
-        return this.disableDeletion;
+    public boolean getDeleteExisting() {
+        return this.deleteExisting;
     }
 
-    @Option(option = "disable-deletion", description = "Disable deletion of existing workflows")
-    public void setDisableDeletion(boolean disableDeletion) {
-        this.disableDeletion = disableDeletion;
+    @Option(option = "delete-existing", description = "Delete existing workflows")
+    public void setDeleteExisting(boolean deleteExisting) {
+        this.deleteExisting = deleteExisting;
     }
 
     /**
-     * Finds the most common 0-based substring of all {@code groups}.
+     * Finds the most common prefix of all {@code groups}.
      */
     protected static String findCommonSubstring(List<String> groups) {
         if (groups.isEmpty()) {
@@ -152,7 +153,9 @@ public abstract class CIConfigExtractionTask extends DefaultTask {
         }
 
         final Deque<Character> firstGroup = new ArrayDeque<>();
-        groups.get(0).chars().forEach(ch -> firstGroup.add(Character.valueOf((char) ch)));
+        // Use the smallest group as a reference since all others are bound by its length
+        groups.stream().min(Comparator.comparing(String::length))
+            .get().chars().forEach(ch -> firstGroup.add(Character.valueOf((char) ch)));
 
         String common = "";
         while (!firstGroup.isEmpty()) {
