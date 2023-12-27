@@ -14,7 +14,7 @@ java {
 }
 
 group 'net.neoforged.gradleutils'
-version '3.0.0-alpha.9'
+version '3.0.0-alpha.10'
 
 repositories {
     mavenCentral()
@@ -49,6 +49,25 @@ final actionsTemplateZip = tasks.register('createActionsTemplateZip', Zip) {
 
 tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
     from(actionsTemplateZip)
+}
+
+tasks.named('jar', Jar) {
+    try {
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream()
+        project.exec {
+            commandLine('git', 'rev-parse', 'HEAD')
+            standardOutput(bos)
+        }.rethrowFailure().assertNormalExitValue()
+
+        final gitCommit = new String(bos.toByteArray())
+        // Store the git commit as the Implementation-Version of the tasks package
+        // TODO - re-evaluate: find a better way of storing this sha for use in template generation
+        manifest.attributes([
+                'Implementation-Version': gitCommit
+        ], 'net/neoforged/gradleutils/tasks/')
+    } catch (Exception ex) {
+        throw new IllegalStateException("Failed to determine the latest commit hash; check if 'git' is on the PATH", ex)
+    }
 }
 
 license {
