@@ -43,7 +43,7 @@ public abstract class ExtractActionsWorkflowsTask extends CIConfigExtractionTask
         final Map<String, Object> binding = new HashMap<>();
         binding.put("project", getProject());
         binding.put("jdkVersion", determineJDKVersion());
-        binding.put("commonGroup", findCommonSubstring(
+        binding.put("commonGroup", findCommonPrefix(
                 getProject().getAllprojects().stream()
                         .filter(project -> !project.getGroup().toString().isEmpty())
                         .map(project -> project.getGroup() + "/" + project.getExtensions().getByType(BasePluginExtension.class).getArchivesName().get() + "/")

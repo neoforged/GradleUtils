@@ -147,7 +147,7 @@ public abstract class CIConfigExtractionTask extends DefaultTask {
     /**
      * Finds the most common prefix of all {@code groups}.
      */
-    protected static String findCommonSubstring(List<String> groups) {
+    protected static String findCommonPrefix(List<String> groups) {
         if (groups.isEmpty()) {
             return "";
         }
