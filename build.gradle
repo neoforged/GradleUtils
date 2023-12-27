@@ -51,6 +51,20 @@ tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
     from(actionsTemplateZip)
 }
 
+tasks.named('jar', Jar) {
+    final ByteArrayOutputStream bos = new ByteArrayOutputStream()
+    project.exec {
+        commandLine('git', 'rev-parse', 'HEAD')
+        standardOutput(bos)
+    }.rethrowFailure().assertNormalExitValue()
+
+    final gitCommit = new String(bos.toByteArray())
+    // Store the git commit as the Implementation-Title of the tasks package
+    manifest.attributes([
+            'Implementation-Title': gitCommit
+    ], 'net/neoforged/gradleutils/tasks/')
+}
+
 license {
     header(file('HEADER'))
     skipExistingHeaders = true // Ignore existing license headers on files
