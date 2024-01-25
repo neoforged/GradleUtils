@@ -39,7 +39,6 @@ abstract class SpotlessUtilsExtension {
 
         final extract = project.tasks.register('extraGUSpotlessConfiguration', ExtractSpotlessConfiguration) {
             it.output.set(configPath)
-            it.targetConfiguration.set(SpotlessUtilsExtension.getResource('/formatter-config.xml'))
         }
 
         project.tasks.withType(SpotlessTask).configureEach {
