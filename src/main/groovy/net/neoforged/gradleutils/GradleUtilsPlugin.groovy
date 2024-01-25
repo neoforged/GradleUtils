@@ -37,9 +37,5 @@ class GradleUtilsPlugin implements Plugin<Project> {
         //Setup the CI project task.
         project.tasks.register("setupGitHubActionsWorkflows", ExtractActionsWorkflowsTask.class)
         GradleUtils.setupCITasks(project)
-
-        if (project.plugins.hasPlugin('com.diffplug.spotless')) {
-            project.extensions.create('spotlessUtils', Class.forName('net.neoforged.gradleutils.spotless.SpotlessUtilsExtension'), project)
-        }
     }
 }

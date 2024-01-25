@@ -108,6 +108,13 @@ gradlePlugin {
             tags.set(['versioning', 'changelog'])
             implementationClass = 'net.neoforged.gradleutils.GradleUtilsPlugin'
         }
+        gradleutilsSpotless {
+            id = 'net.neoforged.gradleutils.spotless'
+            displayName = 'GradleUtils Spotless'
+            description = 'A plugin that configures spotless on projects'
+            tags.set(['spotless'])
+            implementationClass = 'net.neoforged.gradleutils.spotless.SpotlessPlugin'
+        }
     }
 }
 
