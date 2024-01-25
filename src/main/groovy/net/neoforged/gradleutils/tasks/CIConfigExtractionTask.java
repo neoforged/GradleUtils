@@ -8,10 +8,12 @@ package net.neoforged.gradleutils.tasks;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.options.Option;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 import java.io.File;
@@ -19,6 +21,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayDeque;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.List;
 import java.util.zip.ZipEntry;
 
 public abstract class CIConfigExtractionTask extends DefaultTask {
@@ -42,7 +48,7 @@ public abstract class CIConfigExtractionTask extends DefaultTask {
         String fileZip = exportResource();
 
         //Check if the directory exists, if so then delete it.
-        if (targetDir.exists()) {
+        if (targetDir.exists() && deleteExisting) {
             boolean couldDelete = true;
             for (File file : targetDir.listFiles()) {
                 couldDelete &= file.delete();
@@ -124,5 +130,43 @@ public abstract class CIConfigExtractionTask extends DefaultTask {
         }
 
         return jarFolder + templateZipName;
+    }
+
+    private boolean deleteExisting;
+
+    @Input
+    public boolean getDeleteExisting() {
+        return this.deleteExisting;
+    }
+
+    @Option(option = "delete-existing", description = "Delete existing workflows")
+    public void setDeleteExisting(boolean deleteExisting) {
+        this.deleteExisting = deleteExisting;
+    }
+
+    /**
+     * Finds the most common prefix of all {@code groups}.
+     */
+    protected static String findCommonPrefix(List<String> groups) {
+        if (groups.isEmpty()) {
+            return "";
+        }
+
+        final Deque<Character> firstGroup = new ArrayDeque<>();
+        // Use the smallest group as a reference since all others are bound by its length
+        groups.stream().min(Comparator.comparing(String::length))
+            .get().chars().forEach(ch -> firstGroup.add(Character.valueOf((char) ch)));
+
+        String common = "";
+        while (!firstGroup.isEmpty()) {
+            final String current = common + firstGroup.pop();
+            if (groups.stream().allMatch(group -> group.startsWith(current))) {
+                common = current;
+            } else {
+                break;
+            }
+        }
+
+        return common;
     }
 }

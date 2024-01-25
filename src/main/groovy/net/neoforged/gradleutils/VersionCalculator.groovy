@@ -13,6 +13,7 @@ import org.eclipse.jgit.api.DescribeCommand
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.Repository
+import org.gradle.api.GradleException
 
 import javax.annotation.Nullable
 
@@ -79,6 +80,10 @@ class VersionCalculator {
 
         while (true) {
             final described = describe(git).setTarget(currentRev).call()
+            if (described === null) {
+                throw new GradleException("Cannot calculate the project version without a previous Git tag. Did you forget to run \"git fetch --tags\"?")
+            }
+
             // Describe (long) output is "<tag>-<offset>-g<commit>"
             final describeSplit = GradleUtils.rsplit(described, '-', 2)
 
