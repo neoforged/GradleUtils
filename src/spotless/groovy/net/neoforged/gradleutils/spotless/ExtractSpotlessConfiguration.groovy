@@ -38,11 +38,7 @@ abstract class ExtractSpotlessConfiguration extends DefaultTask {
             final input = SpotlessUtilsExtension.getResourceAsStream('/formatter-config.xml');
             final out = Files.newOutputStream(output)
         ) {
-            byte[] buffer = new byte[1024]
-            int len
-            while ((len = input.read(buffer)) > 0) {
-                out.write(buffer, 0, len)
-            }
+            input.transferTo(out)
         }
     }
 }

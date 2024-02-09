@@ -13,22 +13,27 @@ java {
     withSourcesJar()
 }
 
+sourceSets {
+    spotless
+}
+
 group 'net.neoforged.gradleutils'
 version '3.0.0-alpha.11'
 
 repositories {
-    mavenCentral {
-        content {
-            excludeGroup('com.diffplug.spotless')
-        }
-    }
+    mavenCentral()
     gradlePluginPortal()
 }
 
 // Spotless runs on J11
-configurations {
-    compileClasspath {
-        attributes.attribute Attribute.of('org.gradle.jvm.version', Integer), 11
+tasks.named('compileSpotlessJava', JavaCompile).configure {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+tasks.named('compileSpotlessGroovy', GroovyCompile).configure {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(11)
     }
 }
 
@@ -39,6 +44,10 @@ if (System.getenv('GPP_KEY')) {
     }
 }
 
+configurations {
+    spotlessImplementation.extendsFrom(api)
+}
+
 dependencies {
     api 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
     api 'io.github.gradle-nexus:publish-plugin:1.3.0'
@@ -47,7 +56,8 @@ dependencies {
     api "net.neoforged:groovydslimprover:${gdi_version}:base"
     api "net.neoforged:groovydslimprover:${gdi_version}:runtime"
 
-    compileOnly 'com.diffplug.spotless:spotless-plugin-gradle:6.23.3'
+    spotlessImplementation(gradleApi())
+    spotlessImplementation 'com.diffplug.spotless:spotless-plugin-gradle:6.23.3'
 }
 
 sourceSets {
@@ -111,7 +121,7 @@ gradlePlugin {
         gradleutilsSpotless {
             id = 'net.neoforged.gradleutils.spotless'
             displayName = 'GradleUtils Spotless'
-            description = 'A plugin that configures spotless on projects'
+            description = 'A plugin that configures Spotless on projects'
             tags.set(['spotless'])
             implementationClass = 'net.neoforged.gradleutils.spotless.SpotlessPlugin'
         }
@@ -121,6 +131,10 @@ gradlePlugin {
 final changelogTask = tasks.register('changelog', GenerateChangelogTask) {
     it.description = 'Generates a commit changelog using the git CLI command'
     it.changelogFile.set(layout.buildDirectory.file('changelog.txt'))
+}
+
+tasks.named('jar', Jar) {
+    from(sourceSets.spotless.output)
 }
 
 tasks.named('assemble') {

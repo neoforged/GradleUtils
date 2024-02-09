@@ -29,11 +29,7 @@ abstract class SpotlessUtilsExtension {
                 final input = SpotlessUtilsExtension.getResourceAsStream('/formatter-config.xml');
                 final output = Files.newOutputStream(configPath.toPath())
             ) {
-                byte[] buffer = new byte[1024];
-                int len
-                while ((len = input.read(buffer)) > 0) {
-                    output.write(buffer, 0, len)
-                }
+                input.transferTo(output)
             }
         }
 
