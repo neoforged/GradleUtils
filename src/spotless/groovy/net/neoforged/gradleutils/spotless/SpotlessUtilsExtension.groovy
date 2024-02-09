@@ -22,17 +22,6 @@ abstract class SpotlessUtilsExtension {
     SpotlessUtilsExtension(Project project) {
         configPath = new File(project.rootDir, '.gradle/formatter-config.xml')
 
-        if (!configPath.exists()) {
-            Files.createDirectories(configPath.toPath().parent)
-
-            try (
-                final input = SpotlessUtilsExtension.getResourceAsStream('/formatter-config.xml');
-                final output = Files.newOutputStream(configPath.toPath())
-            ) {
-                input.transferTo(output)
-            }
-        }
-
         final extract = project.tasks.register('extraGUSpotlessConfiguration', ExtractSpotlessConfiguration) {
             it.output.set(configPath)
         }
@@ -47,6 +36,18 @@ abstract class SpotlessUtilsExtension {
     }
 
     void configure(JavaExtension ext) {
+        // Spotless requires the config file to exist during configuration
+        if (!configPath.exists()) {
+            Files.createDirectories(configPath.toPath().parent)
+
+            try (
+                    final input = SpotlessUtilsExtension.getResourceAsStream('/formatter-config.xml');
+                    final output = Files.newOutputStream(configPath.toPath())
+            ) {
+                input.transferTo(output)
+            }
+        }
+
         ext.endWithNewline()
         ext.indentWithSpaces()
         ext.removeUnusedImports()
