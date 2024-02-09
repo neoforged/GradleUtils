@@ -22,7 +22,7 @@ abstract class SpotlessUtilsExtension {
     SpotlessUtilsExtension(Project project) {
         configPath = new File(project.rootDir, '.gradle/formatter-config.xml')
 
-        final extract = project.tasks.register('extraGUSpotlessConfiguration', ExtractSpotlessConfiguration) {
+        final extract = project.tasks.register('extractGUSpotlessConfiguration', ExtractSpotlessConfiguration) {
             it.output.set(configPath)
         }
 
