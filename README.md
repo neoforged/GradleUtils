@@ -59,6 +59,12 @@ publishing {
 }
 ```
 
+### Spotless
+
+The `net.neoforged.gradleutils.spotless` plugin provides integration (a formatter configuration) with Spotless.  
+
+This plugin provides a `spotlessUtils` extension which has a `configure` method that can be called with the `spotless` extension to configure Spotless and use the formatter configuration provided by GradleUtils.
+
 ## License
 
 This project is licensed under the GNU Lesser General Public License, or LGPL, version 2.1 only. See the `LICENSE` file
