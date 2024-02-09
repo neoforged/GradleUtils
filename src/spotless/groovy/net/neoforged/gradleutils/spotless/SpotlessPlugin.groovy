@@ -13,6 +13,8 @@ import org.gradle.api.Project
 class SpotlessPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
-        project.extensions.create('spotlessUtils', SpotlessUtilsExtension, project)
+        project.pluginManager.withPlugin('com.diffplug.spotless') {
+            project.extensions.create('spotlessUtils', SpotlessUtilsExtension, project)
+        }
     }
 }
