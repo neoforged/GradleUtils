@@ -13,12 +13,28 @@ java {
     withSourcesJar()
 }
 
+sourceSets {
+    spotless
+}
+
 group 'net.neoforged.gradleutils'
-version '3.0.0-alpha.10'
+version '3.0.0-alpha.11'
 
 repositories {
     mavenCentral()
     gradlePluginPortal()
+}
+
+// Spotless runs on J11
+tasks.named('compileSpotlessJava', JavaCompile).configure {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+tasks.named('compileSpotlessGroovy', GroovyCompile).configure {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
 }
 
 if (System.getenv('GPP_KEY')) {
@@ -28,6 +44,10 @@ if (System.getenv('GPP_KEY')) {
     }
 }
 
+configurations {
+    spotlessImplementation.extendsFrom(api)
+}
+
 dependencies {
     api 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
     api 'io.github.gradle-nexus:publish-plugin:1.3.0'
@@ -35,6 +55,9 @@ dependencies {
     api "net.neoforged:groovydslimprover:${gdi_version}"
     api "net.neoforged:groovydslimprover:${gdi_version}:base"
     api "net.neoforged:groovydslimprover:${gdi_version}:runtime"
+
+    spotlessImplementation(gradleApi())
+    spotlessImplementation 'com.diffplug.spotless:spotless-plugin-gradle:6.23.3'
 }
 
 sourceSets {
@@ -73,6 +96,7 @@ tasks.named('jar', Jar) {
 license {
     header(file('HEADER'))
     skipExistingHeaders = true // Ignore existing license headers on files
+    exclude 'formatter-config.xml'
 }
 
 // Disable the license tasks for the template files
@@ -94,12 +118,23 @@ gradlePlugin {
             tags.set(['versioning', 'changelog'])
             implementationClass = 'net.neoforged.gradleutils.GradleUtilsPlugin'
         }
+        gradleutilsSpotless {
+            id = 'net.neoforged.gradleutils.spotless'
+            displayName = 'GradleUtils Spotless'
+            description = 'A plugin that configures Spotless on projects'
+            tags.set(['spotless'])
+            implementationClass = 'net.neoforged.gradleutils.spotless.SpotlessPlugin'
+        }
     }
 }
 
 final changelogTask = tasks.register('changelog', GenerateChangelogTask) {
     it.description = 'Generates a commit changelog using the git CLI command'
     it.changelogFile.set(layout.buildDirectory.file('changelog.txt'))
+}
+
+tasks.named('jar', Jar) {
+    from(sourceSets.spotless.output)
 }
 
 tasks.named('assemble') {
