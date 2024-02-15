@@ -62,8 +62,15 @@ publishing {
 ### Spotless
 
 The `net.neoforged.gradleutils.spotless` plugin provides integration (a formatter configuration) with Spotless.  
+This plugin must be applied to the buildscript, as GradleUtils does not apply it automatically.  
+This plugin also requires Gradle to run with at least Java 11, much like Spotless does.
 
-This plugin provides a `spotlessUtils` extension which has a `configure` method that can be called with the `spotless` extension to configure Spotless and use the formatter configuration provided by GradleUtils.
+This plugin provides a `spotlessUtils` extension which has a `configure` method that can be called with the `spotless` extension to configure Spotless and use the formatter configuration provided by GradleUtils:
+```gradle
+spotlessUtils {
+  configure(spotless)
+}
+```
 
 ## License
 
