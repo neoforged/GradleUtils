@@ -100,7 +100,7 @@ abstract class GradleUtilsExtension {
                 }
         )
         project.tasks.withType(AbstractPublishToMaven).configureEach {
-            configureRecordMavenPublication(it, reportingServiceProvider)
+            configureRecordMavenPublication(it, reportingServiceProvider, providers)
         }
     }
 
@@ -108,12 +108,14 @@ abstract class GradleUtilsExtension {
      * Reconfigures a publish task to record its published publication in the shared build service for
      * generating report at the end of the build.
      */
-    private static void configureRecordMavenPublication(AbstractPublishToMaven configureTask, Provider<ReportMavenPublications> serviceProvider) {
+    private static void configureRecordMavenPublication(AbstractPublishToMaven configureTask, Provider<ReportMavenPublications> serviceProvider, ProviderFactory providerFactory) {
         configureTask.usesService(serviceProvider)
+        Provider<String> groupId = providerFactory.provider {configureTask.publication.groupId}
+        Provider<String> artifactId = providerFactory.provider {configureTask.publication.artifactId}
+        Provider<String> version = providerFactory.provider {configureTask.publication.version}
         configureTask.doLast("recordPublication") { task ->
-            def publication = ((AbstractPublishToMaven) task).publication
             def reportingService = serviceProvider.get()
-            reportingService.record(publication.groupId, publication.artifactId, publication.version)
+            reportingService.record(groupId.get(), artifactId.get(), version.get())
         }
     }
 
