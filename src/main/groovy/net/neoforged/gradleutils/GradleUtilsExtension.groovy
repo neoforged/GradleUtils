@@ -87,7 +87,7 @@ abstract class GradleUtilsExtension {
                 providers.environmentVariable('GPG_PRIVATE_KEY')
                         .orElse(providers.environmentVariable('GPG_SUBKEY'))
                         .orElse(providers.gradleProperty('signing.secretKeyRingFile'))
-                        .map { it as boolean }
+                        .map { true }
                         .orElse(false)
         )
 
