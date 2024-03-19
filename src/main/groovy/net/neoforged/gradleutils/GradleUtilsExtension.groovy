@@ -83,8 +83,13 @@ abstract class GradleUtilsExtension {
         this.gitInfo = objects.mapProperty(String, String)
                 .convention(rawInfo.map { it.gitInfo })
 
-        final possibleSecring = providers.gradleProperty('signing.secretKeyRingFile')
-        shouldSign.convention(project.provider { (System.getenv('GPG_PRIVATE_KEY') || System.getenv('GPG_SUBKEY')) || possibleSecring.getOrNull() })
+        shouldSign.convention(
+                providers.environmentVariable('GPG_PRIVATE_KEY')
+                        .orElse(providers.environmentVariable('GPG_SUBKEY'))
+                        .orElse(providers.gradleProperty('signing.secretKeyRingFile'))
+                        .map { it as boolean }
+                        .orElse(false)
+        )
 
         // Set up reporting of published maven artifacts
         def reportingServiceProvider = project.getGradle().getSharedServices().registerIfAbsent(
