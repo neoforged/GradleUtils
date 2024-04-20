@@ -16,6 +16,6 @@ jobs:
   build:
     uses: neoforged/actions/.github/workflows/build-prs.yml@main
     with:
-      java: ${ jdkVersion in ['8', '11', '17'] ? jdkVersion : '17' }
+      java: ${ jdkVersion in ['8', '11', '17', '21'] ? jdkVersion : '17' }
       gradle_tasks: ${ project.tasks.findByName('test')?.enabled ? 'test' : 'build' }
       jar_compatibility: ${ withJCC ? 'true' : 'false' }
