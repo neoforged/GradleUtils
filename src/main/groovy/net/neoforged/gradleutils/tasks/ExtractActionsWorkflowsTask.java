@@ -51,6 +51,7 @@ public abstract class ExtractActionsWorkflowsTask extends CIConfigExtractionTask
                         .collect(Collectors.toList())
         ));
         binding.put("withPRPublishing", withPRPublishing);
+        binding.put("withJCC", withJCC);
 
         // Use the Implementation-Version attribute to store the git commit
         final String gitCommit = ExtractActionsWorkflowsTask.class.getPackage().getImplementationVersion();
@@ -91,15 +92,25 @@ public abstract class ExtractActionsWorkflowsTask extends CIConfigExtractionTask
         zis.close();
     }
 
-    private boolean withPRPublishing;
+    private boolean withPRPublishing, withJCC;
 
     @Input
     public boolean getWithPRPublishing() {
         return this.withPRPublishing;
     }
 
+    @Input
+    public boolean getWithJCC() {
+        return this.withJCC;
+    }
+
     @Option(option = "pr-publishing", description = "If the workflow for publishing PRs should be enabled")
     public void setWithPRPublishing(boolean withPRPublishing) {
         this.withPRPublishing = withPRPublishing;
+    }
+
+    @Option(option = "jcc", description = "If the workflow for JarCompatibilityChecker should be enabled")
+    public void setWithJCC(boolean withJCC) {
+        this.withJCC = withJCC;
     }
 }
