@@ -7,7 +7,7 @@ on:
       - completed
 
 jobs:
-  publish-prs:
+  publish-jcc:
     if: ${ withJCC ? 'true' : 'false # Option not enabled when the workflows were generated' }
     uses: neoforged/actions/.github/workflows/publish-jcc.yml@main
     with:
