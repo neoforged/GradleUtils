@@ -12,7 +12,7 @@ jobs:
   release:
     uses: neoforged/actions/.github/workflows/gradle-publish.yml@main
     with:
-      java: ${ jdkVersion in ['8', '11', '17'] ? jdkVersion : '17' }
+      java: ${ jdkVersion in ['8', '11', '17', '21'] ? jdkVersion : '17' }
       pre_gradle_tasks: ${ project.tasks.findByName('test')?.enabled ? 'test' : "''" }
       gradle_tasks: publish ${ project.plugins.hasPlugin('io.github.gradle-nexus.publish-plugin') ? 'closeAndReleaseSonatypeStagingRepository' : '' }
     secrets:
