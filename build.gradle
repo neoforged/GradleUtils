@@ -1,139 +1,246 @@
-import net.minecraftforge.gradleutils.ChangelogUtils
-import net.minecraftforge.gradleutils.GradleUtils
-import net.minecraftforge.gradleutils.tasks.ExtractTeamCityProjectConfigurationTask
-import net.minecraftforge.gradleutils.tasks.GenerateChangelogTask
-
 plugins {
     id 'java-gradle-plugin'
     id 'groovy'
     id 'maven-publish'
     id 'org.cadixdev.licenser' version '0.6.1'
-}
-
-ext {
-    GIT_INFO = GradleUtils.gitInfo(file('.'))
+    id 'com.gradle.plugin-publish' version '1.1.0'
 }
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(8)
     }
+    withSourcesJar()
+}
+
+sourceSets {
+    spotless
 }
 
 group 'net.neoforged.gradleutils'
-version GradleUtils.getTagOffsetVersion(GIT_INFO)
+version '3.0.0-alpha.13'
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
+}
+
+// Spotless runs on J11
+tasks.named('compileSpotlessJava', JavaCompile).configure {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+tasks.named('compileSpotlessGroovy', GroovyCompile).configure {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
+if (System.getenv('GPP_KEY')) {
+    project.ext {
+        set('gradle.publish.key', System.getenv('GPP_KEY'))
+        set('gradle.publish.secret', System.getenv('GPP_SECRET'))
+    }
+}
+
+configurations {
+    spotlessImplementation.extendsFrom(api)
 }
 
 dependencies {
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
-}
+    api 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
+    api 'io.github.gradle-nexus:publish-plugin:1.3.0'
 
-task copyGradleUtilsGroovy(type: Copy) {
-    outputs.upToDateWhen { false }
-    into 'src/main/groovy'
-    from('buildSrc/src/main/groovy') {
-        include '**/*.groovy'
-        include '**/*.java'
+    api("net.neoforged:groovydslimprover:${gdi_version}") {
+        capabilities {
+            requireCapability 'net.neoforged:groovydslimprover-base'
+        }
     }
+
+    spotlessImplementation(gradleApi())
+    spotlessImplementation 'com.diffplug.spotless:spotless-plugin-gradle:6.23.3'
 }
 
-task copyGradleUtilsResources(type: Copy) {
-    outputs.upToDateWhen { false }
-    into 'src/main/resources'
-    from('buildSrc/build/extraresources') {
-        include '**/*.zip'
+sourceSets {
+    actionsTemplate
+}
+
+final actionsTemplateZip = tasks.register('createActionsTemplateZip', Zip) {
+    from(sourceSets.actionsTemplate.output)
+    archiveFileName.set('.github-workflows.zip')
+    destinationDirectory.set(layout.buildDirectory.dir('template'))
+}
+
+tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
+    from(actionsTemplateZip)
+}
+
+tasks.named('jar', Jar) {
+    try {
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream()
+        project.exec {
+            commandLine('git', 'rev-parse', 'HEAD')
+            standardOutput(bos)
+        }.rethrowFailure().assertNormalExitValue()
+
+        final gitCommit = new String(bos.toByteArray())
+        // Store the git commit as the Implementation-Version of the tasks package
+        // TODO - re-evaluate: find a better way of storing this sha for use in template generation
+        manifest.attributes([
+                'Implementation-Version': gitCommit
+        ], 'net/neoforged/gradleutils/tasks/')
+    } catch (Exception ex) {
+        throw new IllegalStateException("Failed to determine the latest commit hash; check if 'git' is on the PATH", ex)
     }
-}
-
-compileGroovy.dependsOn(copyGradleUtilsResources)
-checkLicenseMain.dependsOn(copyGradleUtilsResources)
-compileGroovy.dependsOn(copyGradleUtilsGroovy)
-checkLicenseMain.dependsOn(copyGradleUtilsGroovy)
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    archiveClassifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives sourcesJar
 }
 
 license {
-    header = file('HEADER')
-    ext {
-        name = 'GradleUtils'
-        year = 2021
-        fullname = 'Forge Development LLC'
+    header(file('HEADER'))
+    skipExistingHeaders = true // Ignore existing license headers on files
+    exclude 'formatter-config.xml'
+}
+
+// Disable the license tasks for the template files
+["checkLicenseActionsTemplate", "updateLicenseActionsTemplate"].each {
+    tasks.named(it) {
+        enabled = false
     }
-    exclude '**/*.properties'
 }
 
 gradlePlugin {
+    website = 'https://github.com/neoforged/GradleUtils'
+    vcsUrl  = 'https://github.com/neoforged/GradleUtils.git'
+
     plugins {
         gradleutils {
             id = 'net.neoforged.gradleutils'
-            implementationClass = 'net.minecraftforge.gradleutils.GradleUtilsPlugin'
+            displayName = 'GradleUtils'
+            description = 'A plugin with different utilities for NeoForged projects. Includes tag-based versioning and changelog generation'
+            tags.set(['versioning', 'changelog'])
+            implementationClass = 'net.neoforged.gradleutils.GradleUtilsPlugin'
+        }
+        gradleutilsSpotless {
+            id = 'net.neoforged.gradleutils.spotless'
+            displayName = 'GradleUtils Spotless'
+            description = 'A plugin that configures Spotless on projects'
+            tags.set(['spotless'])
+            implementationClass = 'net.neoforged.gradleutils.spotless.SpotlessPlugin'
         }
     }
 }
 
-ChangelogUtils.setupChangelogGenerationFromTag(project, '1.0')
+final changelogTask = tasks.register('changelog', GenerateChangelogTask) {
+    it.description = 'Generates a commit changelog using the git CLI command'
+    it.changelogFile.set(layout.buildDirectory.file('changelog.txt'))
+}
+
+tasks.named('jar', Jar) {
+    from(sourceSets.spotless.output)
+}
+
+tasks.named('assemble') {
+    it.dependsOn changelogTask
+}
+
+tasks.named('publishPlugins') {
+    it.enabled = !project.version.toString().endsWith('-SNAPSHOT')
+}
 
 publishing {
     publications {
         pluginMaven(MavenPublication) { mavenPublication ->
-            artifact sourcesJar
-
-            ChangelogUtils.setupChangelogGenerationForPublishing(project, mavenPublication)
-
+            artifact(changelogTask) {
+                classifier = 'changelog'
+                extension = 'txt'
+            }
             pom {
                 name = 'Gradle Utils'
-                description = 'Used by MinecraftForge projects as a util library for Gradle buildscripts'
-                url = 'https://github.com/NeoForged/GradleUtils'
+                description = 'Gradle buildscript utility library for NeoForged projects'
+                url = 'https://github.com/neoforged/GradleUtils'
                 scm {
-                    url = 'https://github.com/NeoForged/GradleUtils'
-                    connection = 'scm:git:git://github.com/NeoForged/GradleUtils.git'
+                    url = 'https://github.com/neoforged/GradleUtils'
+                    connection = 'https://github.com/neoforged/GradleUtils.git'
                     developerConnection = 'scm:git:git@github.com:NeoForged/GradleUtils.git'
                 }
                 issueManagement {
                     system = 'github'
-                    url = 'https://github.com/NeoForged/GradleUtils/issues'
+                    url = 'https://github.com/neoforged/GradleUtils/issues'
                 }
-
+                organization {
+                    name = 'NeoForged'
+                    url = 'https://github.com/neoforged'
+                }
                 licenses {
                     license {
                         name = 'LGPLv2.1'
                         url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
                     }
                 }
-
-                developers {
-                    developer {
-                        id = 'LexManos'
-                        name = 'Lex Manos'
-                    }
-                    developer {
-                        id = 'SizableShrimp'
-                        name = 'SizableShrimp'
-                    }
-                    developer {
-                        id = 'marchermans'
-                        name = 'Orion'
-                    }
-                }
             }
         }
     }
     repositories {
-        maven GradleUtils.getPublishingForgeMaven(project)
+        maven {
+            name 'forge'
+            if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
+                def publishingEndpoint = System.env.MAVEN_URL_RELEASE ?: 'https://maven.neoforged.net/releases'
+
+                if (project.version.toString().endsWith('-SNAPSHOT')) {
+                    url System.env.MAVEN_URL_SNAPSHOTS ?: 'https://maven.neoforged.net/snapshots'
+                } else {
+                    url publishingEndpoint
+                }
+                authentication {
+                    basic(BasicAuthentication)
+                }
+                credentials {
+                    username = System.env.MAVEN_USER
+                    password = System.env.MAVEN_PASSWORD
+                }
+            } else {
+                url 'repo'
+            }
+        }
     }
 }
 
-task setupTeamCityProject(type: ExtractTeamCityProjectConfigurationTask) {
+final versionProvider = providers.provider { project.version?.toString() }
+tasks.register("configureGitHubActions", ConfigureActions) {
+    version.set(versionProvider)
 }
 
-GradleUtils.setupCITasks(project);
+abstract class ConfigureActions extends DefaultTask {
+    @Input
+    abstract Property<String> getVersion()
+
+    @TaskAction
+    void doAction() {
+        final versionString = version.get()
+        new File(System.getenv('GITHUB_OUTPUT')) << "version=$versionString"
+    }
+}
+
+abstract class GenerateChangelogTask extends DefaultTask {
+    @OutputFile
+    abstract RegularFileProperty getChangelogFile()
+
+    @javax.inject.Inject // This might look like a compile error in IDE, but it actually compiles okay
+    abstract ExecOperations getExecOperations()
+
+    @TaskAction
+    void generate() {
+        try {
+            changelogFile.get().asFile.withOutputStream { output ->
+                execOperations.exec { ExecSpec spec ->
+                    // TODO: limit to last reachable tag?
+                    spec.commandLine('git', 'log', '--no-show-signature', '--no-color',
+                            '--pretty=%h% (describe:tags=true:abbrev) (%aN) %s')
+                    spec.standardOutput(output)
+                }.assertNormalExitValue().rethrowFailure()
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to generate changelog; check if 'git' is on the PATH", e)
+        }
+    }
+}
