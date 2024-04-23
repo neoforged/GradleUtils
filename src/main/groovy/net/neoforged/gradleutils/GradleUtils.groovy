@@ -22,10 +22,10 @@ package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
+import net.neoforged.gradleutils.git.CommandLineGitProvider
+import net.neoforged.gradleutils.git.GitProvider
+import net.neoforged.gradleutils.git.JGitProvider
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.errors.RepositoryNotFoundException
-import org.eclipse.jgit.lib.ObjectId
-import org.eclipse.jgit.lib.Repository
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
@@ -57,10 +57,8 @@ class GradleUtils {
     }
 
     static Map<String, String> gitInfo(File dir, String... globFilters) {
-        def git
-        try {
-            git = openGit(dir)
-        } catch (RepositoryNotFoundException e) {
+        GitProvider provider = openGitProvider(dir)
+        if (provider == null) {
             return [
                     tag: '0.0',
                     offset: '0',
@@ -70,10 +68,11 @@ class GradleUtils {
                     abbreviatedId: '00000000'
             ]
         }
-        def tag = git.describe().setLong(true).setTags(true).setMatch(globFilters ?: new String[0]).call()
+
+        def tag = provider.describe().longFormat(true).includeLightweightTags(true).matching(globFilters).run()
         def desc = rsplit(tag, '-', 2) ?: ['0.0', '0', '00000000']
-        def head = git.repository.exactRef('HEAD')
-        final String longBranch = head.symbolic ? head?.target?.name : null // matches Repository.getFullBranch() but returning null when on a detached HEAD
+        def head = provider.head
+        def longBranch = provider.fullBranch
 
         Map<String, String> ret = [:]
         ret.dir = dir.absolutePath
@@ -82,12 +81,12 @@ class GradleUtils {
             ret.tag = ret.tag.substring(1)
         ret.offset = desc[1]
         ret.hash = desc[2]
-        ret.branch = longBranch != null ? Repository.shortenRefName(longBranch) : null
-        ret.commit = ObjectId.toString(head.objectId)
-        ret.abbreviatedId = head.objectId.abbreviate(8).name()
+        ret.branch = longBranch != null ? provider.shortenRef(longBranch) : null
+        ret.commit = head
+        ret.abbreviatedId = provider.abbreviateRef(head, 0)
 
         // Remove any lingering null values
-        ret.removeAll {it.value == null }
+        ret.removeAll { it.value == null }
 
         return ret
     }
@@ -280,5 +279,9 @@ class GradleUtils {
                 throw lastException
             }
         }
+    }
+
+    static GitProvider openGitProvider(File projectDir) {
+        return CommandLineGitProvider.create(projectDir) ?: JGitProvider.create(projectDir)
     }
 }
