@@ -23,41 +23,52 @@ public interface GitProvider extends AutoCloseable {
     File getDotGitDirectory();
 
     /**
-     * {@return an abbreviated SHA-1 commit ID for the given ref}
+     * Returns an abbreviated SHA-1 commit ID for the given ref.
      *
      * @param ref           the ref
      * @param minimumLength the minimum amount of characters, or {@code 0} to default to a reasonable value no lower than 4
+     * @return an abbreviated SHA-1 commit ID for the given ref
      * @throws IllegalArgumentException if the minimum length is not 0 and is negative or smaller than 4
      */
     String abbreviateRef(String ref, int minimumLength);
 
     /**
-     * {@return a shortened user-friendlier version of the given ref}
+     * Returns a shortened user-friendlier version of the given ref.
      *
      * @param ref the ref
+     * @return a shortened user-friendlier version of the given ref
      */
     String shortenRef(String ref);
 
     /**
-     * {@return the commit ID for the revision pointed at by HEAD}
+     * Returns the commit ID for the revision pointed at by HEAD.
+     *
+     * @return the commit ID for the revision pointed at by HEAD
      */
     String getHead();
 
     /**
-     * {@return the full branch name (with prefix) pointed at by HEAD, or {@code null} if not available (such as during
-     * a detached HEAD state}
+     * Returns the full branch name (with prefix) pointed at by HEAD, or {@code null} if not available (such as during
+     * a detached HEAD state.
+     *
+     * @return the full branch name (with prefix) pointed at by HEAD, or {@code null} if not available (such as during
+     * a detached HEAD state
      */
     @Nullable
     String getFullBranch();
 
     /**
-     * {@return the push URL for a remote, or {@code null} if the remote doesn't exist}
+     * Returns the push URL for a remote, or {@code null} if the remote doesn't exist.
+     *
+     * @return the push URL for a remote, or {@code null} if the remote doesn't exist
      */
     @Nullable
     String getRemotePushUrl(String remoteName);
 
     /**
-     * {@return the number of remotes in the repository}
+     * Returns the number of remotes in the repository.
+     *
+     * @return the number of remotes in the repository
      */
     int getRemotesCount();
 
@@ -99,9 +110,11 @@ public interface GitProvider extends AutoCloseable {
 
         // TODO: document
         DescribeCall target(String rev);
-        
+
         /**
-         * {@return the result of the describe call}
+         * Returns the result of the describe call.
+         *
+         * @return the result of the describe call
          */
         String run();
     }
