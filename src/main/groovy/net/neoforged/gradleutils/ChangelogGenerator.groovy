@@ -8,11 +8,7 @@ package net.neoforged.gradleutils
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
 import net.neoforged.gradleutils.git.GitProvider
-import net.neoforged.gradleutils.git.JGitProvider
-import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Constants
-import org.eclipse.jgit.revwalk.RevCommit
-import org.eclipse.jgit.revwalk.RevWalk
 
 @CompileStatic
 @PackageScope
@@ -23,45 +19,29 @@ class ChangelogGenerator {
         this.calculator = calculator
     }
 
-    String generate(Git git, String earliest, String latest = Constants.HEAD) {
-        // Resolve both commits
-        final RevCommit earliestCommit, latestCommit
-        try (RevWalk walk = new RevWalk(git.repository)) {
-            earliestCommit = walk.parseCommit(git.repository.resolve(earliest))
-            latestCommit = walk.parseCommit(git.repository.resolve(latest))
-        }
-
-        // List all commits between latest and earliest commits -- including the two ends
-        def logCommand = git.log().add(latestCommit)
-        // Exclude all parents of earliest commit
-        for (RevCommit parent : earliestCommit.getParents()) {
-            logCommand.not(parent)
-        }
-
-        // List has order of latest (0) to earliest (list.size())
-        final List<RevCommit> commits = logCommand.call().collect()
+    String generate(GitProvider git, String earliest, String latest = Constants.HEAD) {
+        def commits = git.getCommits(latest, earliest)
 
         // TODO: headers for tags -- need more hooks into version calculator
         // TODO: caching for version calculation -- perhaps split version calculator to two passes? 
 
         final StringBuilder builder = new StringBuilder()
-        for (RevCommit commit : commits) {
+        for (GitProvider.CommitData commit : commits) {
 
-            final version = calculateVersion(git, commit.name())
+            final version = calculateVersion(git, commit.hash())
             // " - `<version>` <message>" 
             // "   <continuation>" if multi-line
 
             builder.append(" - `$version` ")
-            buildCommitMessage(builder, commit, "   ")
+            buildCommitMessage(builder, commit.message(), "   ")
         }
 
         return builder.toString()
     }
 
-    private static void buildCommitMessage(StringBuilder builder, RevCommit commit, String continueHeader) {
+    private static void buildCommitMessage(StringBuilder builder, String message, String continueHeader) {
         // Assume the current line in the builder already contains the initial part of the line (with the version)
 
-        final message = commit.fullMessage
         // Assume that the message contains at least one LF
         // If the first and last LF in the message are at the same position, then there is only one singular LF
         if (message.indexOf('\n') == message.lastIndexOf('\n')) {
@@ -80,11 +60,8 @@ class ChangelogGenerator {
         }
     }
 
-    private String calculateVersion(Git git, String rev) {
-        // TODO: switch this class fully to GitProvider
-        JGitProvider provider = new JGitProvider(git.repository)
-        GitProvider 
+    private String calculateVersion(GitProvider git, String rev) {
         // Skip branch suffix
-        return calculator.calculate(provider, rev, true, true)
+        return calculator.calculate(git, rev, true, true)
     }
 }

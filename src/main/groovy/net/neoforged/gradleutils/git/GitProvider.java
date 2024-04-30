@@ -7,6 +7,7 @@ package net.neoforged.gradleutils.git;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.util.List;
 
 /**
  * Provides a simplified interface to the Git version control system.
@@ -71,6 +72,38 @@ public interface GitProvider extends AutoCloseable {
      * @return the number of remotes in the repository
      */
     int getRemotesCount();
+
+    /**
+     * Returns the commit information for the given revs, starting from the latest revision to (and including)
+     * the earliest revision.
+     *
+     * <p>Note that this is not equivalent to a command invocation of {@code git log {latest} ^{earliest}}, as this
+     * method will also include the information about the earliest commit.</p>
+     *
+     * @param latestRev   the latest revision
+     * @param earliestRev the earliest revision
+     * @return the commit information for the given refs,  starting from the latest revision to (and including)
+     * the earliest revision
+     */
+    List<CommitData> getCommits(String latestRev, String earliestRev);
+
+    class CommitData {
+        private final String hash;
+        private final String message;
+
+        CommitData(String hash, String message) {
+            this.hash = hash;
+            this.message = message;
+        }
+
+        public String hash() {
+            return hash;
+        }
+
+        public String message() {
+            return message;
+        }
+    }
 
     /**
      * Starts a describe call.

@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -104,6 +105,14 @@ public class CommandLineGitProvider implements GitProvider {
                     }
                 });
         return ret != null ? ret : 0;
+    }
+
+    @Override
+    public List<CommitData> getCommits(String latestRev, String earliestRev) {
+        throw new UnsupportedOperationException("Not yet implemented"); 
+        // TODO: implement with two invocations (append)
+        // git log --ignore-missing --no-show-signature --pretty=format:%H%n%B -z latest ^earliest
+        // git log --ignore-missing --no-show-signature --pretty=format:%H%n%B -z earliest
     }
 
     @Override

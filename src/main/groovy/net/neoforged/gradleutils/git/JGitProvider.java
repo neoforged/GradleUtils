@@ -7,16 +7,23 @@ package net.neoforged.gradleutils.git;
 
 import org.eclipse.jgit.api.DescribeCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LogCommand;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.RemoteConfig;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * A provider which uses JGit, a pure Java implementation of Git.
@@ -110,6 +117,34 @@ public class JGitProvider implements GitProvider {
     @Override
     public int getRemotesCount() {
         return call(() -> git.remoteList().call().size());
+    }
+
+    @Override
+    public List<CommitData> getCommits(String latestRev, String earliestRev) {
+        // List all commits between latest and earliest commits -- including the two ends
+        final LogCommand logCommand;
+        try {
+            // Resolve both commits
+            final RevCommit earliestCommit, latestCommit;
+            try (RevWalk walk = new RevWalk(git.getRepository())) {
+                earliestCommit = walk.parseCommit(git.getRepository().resolve(latestRev));
+                latestCommit = walk.parseCommit(git.getRepository().resolve(latestRev));
+            }
+            logCommand = git.log().add(latestCommit);
+            // Exclude all parents of earliest commit
+            for (RevCommit parent : earliestCommit.getParents()) {
+                logCommand.not(parent);
+            }
+
+            // List has order of latest (0) to earliest (list.size())
+            final List<CommitData> commits = new ArrayList<>();
+            for (RevCommit revCommit : logCommand.call()) {
+                commits.add(new CommitData(revCommit.toObjectId().name(), revCommit.getFullMessage()));
+            }
+            return commits;
+        } catch (IOException | GitAPIException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

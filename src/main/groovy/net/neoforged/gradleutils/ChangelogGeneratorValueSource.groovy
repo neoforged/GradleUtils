@@ -7,10 +7,8 @@ package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
+import net.neoforged.gradleutils.git.GitProvider
 import net.neoforged.gradleutils.specs.VersionSpec
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.Repository
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.ValueSource
@@ -32,10 +30,8 @@ abstract class ChangelogGeneratorValueSource implements ValueSource<String, Para
         final calculator = new VersionCalculator(parameters.versionSpec.get())
         final generator = new ChangelogGenerator(calculator)
 
-        try (Repository repo = new FileRepositoryBuilder().findGitDir(parameters.workingDirectory.get().asFile).build()) {
-            final git = Git.wrap(repo)
-
-            return generator.generate(git, parameters.earliestRevision.get())
+        try (GitProvider provider = GradleUtils.openGitProvider(parameters.workingDirectory.get().asFile)) {
+            return generator.generate(provider, parameters.earliestRevision.get())
         }
     }
 }
