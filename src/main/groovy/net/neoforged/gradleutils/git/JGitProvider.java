@@ -41,7 +41,7 @@ public class JGitProvider implements GitProvider {
         }
     }
 
-    JGitProvider(Repository repository) {
+    public JGitProvider(Repository repository) {
         this.repository = repository;
         this.git = Git.wrap(repository);
     }
@@ -122,7 +122,7 @@ public class JGitProvider implements GitProvider {
 
         @Override
         public String run() {
-            return call(() -> command.setLong(longFormat).setTags(includeLightweightTags).setMatch(matchPatterns.toArray(new String[0])).call());
+            return call(() -> command.setLong(longFormat).setTags(includeLightweightTags).setMatch(matchPatterns.toArray(new String[0])).setTarget(this.target).call());
         }
     }
 

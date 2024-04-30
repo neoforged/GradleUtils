@@ -130,6 +130,8 @@ public class CommandLineGitProvider implements GitProvider {
                             builder.command().add("--match");
                             builder.command().add(pattern);
                         }
+
+                        builder.command(target);
                     },
                     CommandLineGitProvider::readSingleLine);
         }

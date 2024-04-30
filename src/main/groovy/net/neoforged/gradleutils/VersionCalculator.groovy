@@ -8,9 +8,8 @@ package net.neoforged.gradleutils
 import groovy.transform.CompileStatic
 import groovy.transform.Immutable
 import groovy.transform.PackageScope
+import net.neoforged.gradleutils.git.GitProvider
 import net.neoforged.gradleutils.specs.VersionSpec
-import org.eclipse.jgit.api.DescribeCommand
-import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.Repository
 import org.gradle.api.GradleException
@@ -32,7 +31,7 @@ class VersionCalculator {
         this.spec = spec
     }
 
-    String calculate(Git git, String rev = Constants.HEAD, boolean skipVersionPrefix = false, boolean skipBranchSuffix = false) {
+    String calculate(GitProvider git, String rev = "HEAD", boolean skipVersionPrefix = false, boolean skipBranchSuffix = false) {
         final describe = findTag(git, rev)
 
         String tag = describe.tag
@@ -72,14 +71,14 @@ class VersionCalculator {
         return version.toString()
     }
 
-    private DescribeOutput findTag(Git git, String startingRev) {
+    private DescribeOutput findTag(GitProvider git, String startingRev) {
         TagContextImpl context = new TagContextImpl()
         context.label = spec.tags.label.getOrNull()
         int trackedCommitCount = 0
         String currentRev = startingRev
 
         while (true) {
-            final described = describe(git).setTarget(currentRev).call()
+            final described = describe(git).target(currentRev).run()
             if (described === null) {
                 throw new GradleException("Cannot calculate the project version without a previous Git tag. Did you forget to run \"git fetch --tags\"?")
             }
@@ -116,10 +115,8 @@ class VersionCalculator {
     }
 
     @Nullable
-    private String getBranchSuffix(Git git) {
-        final head = git.repository.exactRef('HEAD')
-        // Matches Repository.getFullBranch() but returning null when on a detached HEAD
-        final longBranch = head.symbolic ? head?.target?.name : null
+    private String getBranchSuffix(GitProvider git) {
+        final longBranch = git.fullBranch
 
         String branch = longBranch != null ? Repository.shortenRefName(longBranch) : ''
         if (branch in spec.branches.suffixExemptedBranches.get()) {
@@ -141,12 +138,12 @@ class VersionCalculator {
         final String label
     }
 
-    private DescribeCommand describe(Git git) {
+    private GitProvider.DescribeCall describe(GitProvider git) {
         final includeFilters = spec.tags.includeFilters.get().<String> toArray(new String[0])
         return git.describe()
-                .setLong(true)
-                .setTags(spec.tags.includeLightweightTags.get())
-                .setMatch(includeFilters)
+                .longFormat(true)
+                .includeLightweightTags(spec.tags.includeLightweightTags.get())
+                .matching(includeFilters)
     }
 
     static class TagContextImpl {

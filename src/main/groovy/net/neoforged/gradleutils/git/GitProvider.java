@@ -97,6 +97,9 @@ public interface GitProvider extends AutoCloseable {
          */
         DescribeCall matching(String... patterns);
 
+        // TODO: document
+        DescribeCall target(String rev);
+        
         /**
          * {@return the result of the describe call}
          */

@@ -18,6 +18,7 @@ abstract class AbstractDescribeCall implements GitProvider.DescribeCall {
     protected boolean longFormat = false;
     protected boolean includeLightweightTags = false;
     protected List<String> matchPatterns = new ArrayList<>();
+    protected String target = "HEAD";
 
     protected AbstractDescribeCall() {
     }
@@ -41,6 +42,12 @@ abstract class AbstractDescribeCall implements GitProvider.DescribeCall {
         } else {
             this.matchPatterns.addAll(Arrays.asList(patterns));
         }
+        return this;
+    }
+
+    @Override
+    public DescribeCall target(String rev) {
+        this.target = rev;
         return this;
     }
 }

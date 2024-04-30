@@ -7,6 +7,8 @@ package net.neoforged.gradleutils
 
 import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
+import net.neoforged.gradleutils.git.GitProvider
+import net.neoforged.gradleutils.git.JGitProvider
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.revwalk.RevCommit
@@ -79,7 +81,10 @@ class ChangelogGenerator {
     }
 
     private String calculateVersion(Git git, String rev) {
+        // TODO: switch this class fully to GitProvider
+        JGitProvider provider = new JGitProvider(git.repository)
+        GitProvider 
         // Skip branch suffix
-        return calculator.calculate(git, rev, true, true)
+        return calculator.calculate(provider, rev, true, true)
     }
 }
