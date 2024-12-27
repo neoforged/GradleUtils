@@ -9,6 +9,7 @@ import dev.lukebemish.immaculate.CheckTask
 import dev.lukebemish.immaculate.FormattingWorkflow
 import dev.lukebemish.immaculate.ImmaculateExtension
 import org.gradle.api.GradleException
+import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
 
 /**
@@ -52,13 +53,13 @@ final class ImmaculateConfiguration {
         // https://github.com/diffplug/spotless/issues/240#issuecomment-385206606
         workflow.custom 'noWildcardImports', { String fileContents ->
             if (fileContents.contains('*;\n')) {
-                throw new GradleException('No wildcard imports are allowed!')
+                throw new InvalidUserDataException('No wildcard imports are allowed!')
             }
         }
 
         workflow.custom 'noNotNull', { String fileContents ->
             if (fileContents.contains('@NotNull') || fileContents.contains('@Nonnull')) {
-                throw new GradleException('@NotNull and @Nonnull are disallowed.')
+                throw new InvalidUserDataException('@NotNull and @Nonnull are disallowed.')
             }
         }
 
