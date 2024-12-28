@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull
  */
 @CompileStatic
 abstract class ReportMavenPublications implements BuildService<Params>, AutoCloseable {
-    private final List<Publication> artifacts = Collections.synchronizedList(new ArrayList<>())
+    private final List<Publication> artifacts = Collections.synchronizedList(new ArrayList<Publication>())
 
     void record(String groupId, String artifactId, String version) {
         artifacts.add(new Publication(

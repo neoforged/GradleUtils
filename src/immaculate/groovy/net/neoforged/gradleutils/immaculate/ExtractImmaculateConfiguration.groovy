@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package net.neoforged.gradleutils.spotless
+package net.neoforged.gradleutils.immaculate
 
 import groovy.transform.CompileStatic
 import org.gradle.api.DefaultTask
@@ -16,11 +16,11 @@ import java.nio.file.Files
 
 @CompileStatic
 @DisableCachingByDefault(because = 'configuration contained inside the jar may change')
-abstract class ExtractSpotlessConfiguration extends DefaultTask {
+abstract class ExtractImmaculateConfiguration extends DefaultTask {
     @OutputFile
     abstract RegularFileProperty getOutput()
 
-    ExtractSpotlessConfiguration() {
+    ExtractImmaculateConfiguration() {
         // configuration contained inside the jar may change
         outputs.upToDateWhen {
             false
@@ -35,8 +35,8 @@ abstract class ExtractSpotlessConfiguration extends DefaultTask {
         }
 
         try (
-            final input = SpotlessUtilsExtension.getResourceAsStream('/formatter-config.xml');
-            final out = Files.newOutputStream(output)
+                final input = ExtractImmaculateConfiguration.getResourceAsStream('/formatter-config.xml');
+                final out = Files.newOutputStream(output)
         ) {
             input.transferTo(out)
         }

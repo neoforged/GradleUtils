@@ -59,16 +59,26 @@ publishing {
 }
 ```
 
-### Spotless
+### Immaculate
 
-The `net.neoforged.gradleutils.spotless` plugin provides integration (a formatter configuration) with Spotless.  
-The Spotless plugin must be manually applied to the buildscript, as GradleUtils does not apply it automatically.  
-This plugin also requires Gradle to run with at least Java 11, much like Spotless does.
+The `net.neoforged.gradleutils.immaculate` plugin provides integration (a formatter configuration) with [Immaculate](https://github.com/lukebemishprojects/Immaculate).
 
-This plugin provides a `spotlessUtils` extension which has a `configure` method that can be called with the `spotless` extension to configure Spotless and use the formatter configuration provided by GradleUtils:
-```gradle
-spotlessUtils {
-  configure(spotless)
+When you apply the plugin alongside Immaculate, it automatically configures a java workflow.
+
+Example usage in settings.gradle to apply it to all projects that contain java code:
+
+```groovy
+plugins {
+    id 'net.neoforged.gradleutils' version '4.0.0' apply false
+    id 'net.neoforged.gradleutils.immaculate' version '4.0.0' apply false
+    id 'dev.lukebemish.immaculate' version '0.1.6' apply false
+}
+
+gradle.lifecycle.beforeProject { project ->
+    project.plugins.withId("java") {
+        apply plugin: 'dev.lukebemish.immaculate'
+        apply plugin: 'net.neoforged.gradleutils.immaculate'
+    }
 }
 ```
 
