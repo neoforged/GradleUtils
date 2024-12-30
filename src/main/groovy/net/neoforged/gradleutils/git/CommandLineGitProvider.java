@@ -47,6 +47,26 @@ public class CommandLineGitProvider implements GitProvider {
         this.directory = directory;
     }
 
+    private static List<CommitData> processGitLog(int exitCode, List<String> stdout) {
+        List<CommitData> commits = new ArrayList<>();
+        for (String commitLine : String.join("\n", stdout).split("\0")) {
+            int sep = commitLine.indexOf(':');
+            if (sep == -1) {
+                LOGGER.error("Received invalid commit object: {}", commitLine);
+                continue;
+            }
+
+            String commitId = commitLine.substring(0, sep);
+            String message = commitLine.substring(sep + 1);
+            if (!message.endsWith("\n")) {
+                message += "\n";
+            }
+
+            commits.add(new CommitData(commitId, message));
+        }
+        return commits;
+    }
+
     @Override
     public File getDotGitDirectory() {
         return new File(runGitReadLine("rev-parse", "--absolute-git-dir"));
@@ -108,10 +128,11 @@ public class CommandLineGitProvider implements GitProvider {
 
     @Override
     public List<CommitData> getCommits(String latestRev, String earliestRev) {
-        throw new UnsupportedOperationException("Not yet implemented");
-        // TODO: implement with two invocations (append)
-        // git log --ignore-missing --no-show-signature --pretty=format:%H%n%B -z latest ^earliest
-        // git log --ignore-missing --no-show-signature --pretty=format:%H%n%B -z earliest
+        List<CommitData> commits = new ArrayList<>();
+        commits.addAll(runGit(true, Arrays.asList("log", "--ignore-missing", "--no-show-signature", "--pretty=format:%H:%B", "-z", earliestRev + ".." + latestRev), CommandLineGitProvider::processGitLog));
+        // The previous command does not include information about "earliestRev", we retrieve it separately
+        commits.addAll(runGit(true, Arrays.asList("log", "--ignore-missing", "--no-show-signature", "--pretty=format:%H:%B", "--no-walk", earliestRev), CommandLineGitProvider::processGitLog));
+        return commits;
     }
 
     @Override
@@ -138,7 +159,7 @@ public class CommandLineGitProvider implements GitProvider {
                 args.add(pattern);
             }
 
-            args.add(target);            
+            args.add(target);
 
             return runGit(true, args, CommandLineGitProvider::readSingleLine);
         }
