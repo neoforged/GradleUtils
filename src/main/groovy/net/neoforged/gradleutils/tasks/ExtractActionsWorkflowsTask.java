@@ -46,6 +46,8 @@ public abstract class ExtractActionsWorkflowsTask extends CIConfigExtractionTask
         binding.put("commonGroup", findCommonPrefix(
                 getProject().getAllprojects().stream()
                         .filter(project -> !project.getGroup().toString().isEmpty())
+                        // Don't crash if a project doesn't have the base plugin
+                        .filter(project -> project.getExtensions().findByType(BasePluginExtension.class) != null)
                         .map(project -> project.getGroup() + "/" + project.getExtensions().getByType(BasePluginExtension.class).getArchivesName().get() + "/")
                         .map(group -> group.replace('.', '/')) // Replace dots with slashes in the group
                         .collect(Collectors.toList())

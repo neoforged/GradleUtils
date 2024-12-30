@@ -14,26 +14,26 @@ java {
 }
 
 sourceSets {
-    spotless
+    immaculate
 }
 
 group 'net.neoforged.gradleutils'
-version '3.0.0-alpha.13'
+version '4.0.0'
 
 repositories {
     mavenCentral()
     gradlePluginPortal()
 }
 
-// Spotless runs on J11
-tasks.named('compileSpotlessJava', JavaCompile).configure {
+// Immaculate runs on J17
+tasks.named('compileImmaculateJava', JavaCompile).configure {
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
-tasks.named('compileSpotlessGroovy', GroovyCompile).configure {
+tasks.named('compileImmaculateGroovy', GroovyCompile).configure {
     javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -45,7 +45,7 @@ if (System.getenv('GPP_KEY')) {
 }
 
 configurations {
-    spotlessImplementation.extendsFrom(api)
+    immaculateImplementation.extendsFrom(api)
 }
 
 dependencies {
@@ -58,8 +58,8 @@ dependencies {
         }
     }
 
-    spotlessImplementation(gradleApi())
-    spotlessImplementation 'com.diffplug.spotless:spotless-plugin-gradle:6.23.3'
+    immaculateImplementation(gradleApi())
+    immaculateImplementation "dev.lukebemish.immaculate:dev.lukebemish.immaculate.gradle.plugin:0.1.6"
 }
 
 sourceSets {
@@ -120,12 +120,12 @@ gradlePlugin {
             tags.set(['versioning', 'changelog'])
             implementationClass = 'net.neoforged.gradleutils.GradleUtilsPlugin'
         }
-        gradleutilsSpotless {
-            id = 'net.neoforged.gradleutils.spotless'
-            displayName = 'GradleUtils Spotless'
-            description = 'A plugin that configures Spotless on projects'
-            tags.set(['spotless'])
-            implementationClass = 'net.neoforged.gradleutils.spotless.SpotlessPlugin'
+        gradleutilsImmaculate {
+            id = 'net.neoforged.gradleutils.immaculate'
+            displayName = 'GradleUtils Immaculate'
+            description = 'A plugin that configures Immaculate on projects'
+            tags.set(['immaculate'])
+            implementationClass = 'net.neoforged.gradleutils.immaculate.ImmaculatePlugin'
         }
     }
 }
@@ -136,7 +136,7 @@ final changelogTask = tasks.register('changelog', GenerateChangelogTask) {
 }
 
 tasks.named('jar', Jar) {
-    from(sourceSets.spotless.output)
+    from(sourceSets.immaculate.output)
 }
 
 tasks.named('assemble') {
