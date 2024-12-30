@@ -183,7 +183,7 @@ public class CommandLineGitProvider implements GitProvider {
 
 
         // Combined output is easier for debugging problems
-        StringBuilder combinedOutput = new StringBuilder();
+        StringBuffer combinedOutput = new StringBuffer();
         // Stdout is easier for parsing output in the successful case
         List<String> stdout = new ArrayList<>();
         int exitCode;
@@ -194,15 +194,9 @@ public class CommandLineGitProvider implements GitProvider {
 
             Thread stdoutReader = startLineReaderThread(process.getInputStream(), line -> {
                 stdout.add(line);
-                synchronized (combinedOutput) {
-                    combinedOutput.append(line);
-                }
+                combinedOutput.append(line);
             });
-            Thread stderrReader = startLineReaderThread(process.getErrorStream(), line -> {
-                synchronized (combinedOutput) {
-                    combinedOutput.append(line);
-                }
-            });
+            Thread stderrReader = startLineReaderThread(process.getErrorStream(), combinedOutput::append);
 
             exitCode = process.waitFor();
 
