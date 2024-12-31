@@ -8,10 +8,9 @@ package net.neoforged.gradleutils
 import groovy.transform.CompileStatic
 import groovy.transform.Immutable
 import groovy.transform.PackageScope
+import net.neoforged.gradleutils.git.GitProvider
 import net.neoforged.gradleutils.specs.VersionSpec
-import org.eclipse.jgit.api.DescribeCommand
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.Constants
+import org.eclipse.jgit.fnmatch.FileNameMatcher
 import org.eclipse.jgit.lib.Repository
 import org.gradle.api.GradleException
 
@@ -32,15 +31,25 @@ class VersionCalculator {
         this.spec = spec
     }
 
-    String calculate(Git git, String rev = Constants.HEAD, boolean skipVersionPrefix = false, boolean skipBranchSuffix = false) {
+    String calculate(GitProvider git, String rev = "HEAD", boolean skipVersionPrefix = false, boolean skipBranchSuffix = false) {
         final describe = findTag(git, rev)
 
-        String tag = describe.tag
+        return calculateForTag(
+                git,
+                describe.tag,
+                describe.label,
+                describe.offset,
+                skipVersionPrefix,
+                skipBranchSuffix
+        )
+    }
+
+    String calculateForTag(GitProvider git, String tag, String label, int offset, boolean skipVersionPrefix = false, boolean skipBranchSuffix = false) {
         // Strip label from tag
         if (spec.tags.stripTagLabel.get()) {
-            final sepIdx = describe.tag.lastIndexOf(GENERAL_SEPARATOR as int)
+            final sepIdx = tag.lastIndexOf(GENERAL_SEPARATOR as int)
             if (sepIdx != -1) {
-                tag = describe.tag.substring(0, sepIdx)
+                tag = tag.substring(0, sepIdx)
             }
         }
 
@@ -55,11 +64,11 @@ class VersionCalculator {
         version.append(tag)
 
         if (spec.tags.appendCommitOffset.get()) {
-            version.append(VERSION_SEPARATOR).append(describe.offset)
+            version.append(VERSION_SEPARATOR).append(offset)
         }
 
-        if (describe.label != null) {
-            version.append(GENERAL_SEPARATOR).append(describe.label)
+        if (label != null) {
+            version.append(GENERAL_SEPARATOR).append(label)
         }
 
         if (!skipBranchSuffix && spec.branches.suffixBranch.get()) {
@@ -72,14 +81,35 @@ class VersionCalculator {
         return version.toString()
     }
 
-    private DescribeOutput findTag(Git git, String startingRev) {
+    String getDefaultLabel() {
+        return spec.tags.label.getOrNull()
+    }
+
+    @Nullable
+    String getTagLabel(String tagName) {
+        if (spec.tags.extractLabel.get()) {
+            final int separatorIndex = tagName.lastIndexOf(GENERAL_SEPARATOR as int)
+            // TODO: should we ignore empty labels? (i.e. `1.0-`)
+            if (separatorIndex != -1) {
+                return tagName.substring(separatorIndex + 1)
+            }
+        }
+        return null
+    }
+
+    boolean isLabelResetTag(String tagName) {
+        final cleanLabel = spec.tags.cleanMarkerLabel.getOrNull()
+        return cleanLabel != null && tagName.endsWith(GENERAL_SEPARATOR.toString() + cleanLabel)
+    }
+
+    private DescribeOutput findTag(GitProvider git, String startingRev) {
         TagContextImpl context = new TagContextImpl()
-        context.label = spec.tags.label.getOrNull()
+        context.label = defaultLabel
         int trackedCommitCount = 0
         String currentRev = startingRev
 
         while (true) {
-            final described = describe(git).setTarget(currentRev).call()
+            final described = describe(git).target(currentRev).run()
             if (described === null) {
                 throw new GradleException("Cannot calculate the project version without a previous Git tag. Did you forget to run \"git fetch --tags\"?")
             }
@@ -116,10 +146,8 @@ class VersionCalculator {
     }
 
     @Nullable
-    private String getBranchSuffix(Git git) {
-        final head = git.repository.exactRef('HEAD')
-        // Matches Repository.getFullBranch() but returning null when on a detached HEAD
-        final longBranch = head.symbolic ? head?.target?.name : null
+    private String getBranchSuffix(GitProvider git) {
+        final longBranch = git.fullBranch
 
         String branch = longBranch != null ? Repository.shortenRefName(longBranch) : ''
         if (branch in spec.branches.suffixExemptedBranches.get()) {
@@ -134,6 +162,20 @@ class VersionCalculator {
         return branch
     }
 
+    boolean isIncludedTag(String tagName) {
+        final filters = spec.tags.includeFilters.get()
+        if (filters.isEmpty()) {
+            return true
+        }
+
+        for (final def filter in filters) {
+            if (new FileNameMatcher(filter, null).append(tagName)) {
+                return true
+            }
+        }
+        return false
+    }
+
     @Immutable
     static class DescribeOutput {
         final String tag
@@ -141,12 +183,12 @@ class VersionCalculator {
         final String label
     }
 
-    private DescribeCommand describe(Git git) {
+    private GitProvider.DescribeCall describe(GitProvider git) {
         final includeFilters = spec.tags.includeFilters.get().<String> toArray(new String[0])
         return git.describe()
-                .setLong(true)
-                .setTags(spec.tags.includeLightweightTags.get())
-                .setMatch(includeFilters)
+                .longFormat(true)
+                .includeLightweightTags(spec.tags.includeLightweightTags.get())
+                .matching(includeFilters)
     }
 
     static class TagContextImpl {
