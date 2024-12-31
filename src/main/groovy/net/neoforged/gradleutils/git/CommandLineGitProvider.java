@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,22 +48,28 @@ public class CommandLineGitProvider implements GitProvider {
         this.directory = directory;
     }
 
+    /**
+     * Expects the original git log format %H:%h:%ct:%B
+     * See https://git-scm.com/docs/pretty-formats
+     */
     private static List<CommitData> processGitLog(int exitCode, List<String> stdout) {
         List<CommitData> commits = new ArrayList<>();
         for (String commitLine : String.join("\n", stdout).split("\0")) {
-            int sep = commitLine.indexOf(':');
-            if (sep == -1) {
+            String[] parts = commitLine.split(":", 4);
+            if (parts.length != 4) {
                 LOGGER.error("Received invalid commit object: {}", commitLine);
                 continue;
             }
 
-            String commitId = commitLine.substring(0, sep);
-            String message = commitLine.substring(sep + 1);
+            String commitId = parts[0];
+            String shortCommitId = parts[1];
+            Instant commitTime = Instant.ofEpochSecond(Long.parseUnsignedLong(parts[2]));
+            String message = parts[3];
             if (!message.endsWith("\n")) {
                 message += "\n";
             }
 
-            commits.add(new CommitData(commitId, message));
+            commits.add(new CommitData(commitId, shortCommitId, commitTime, message));
         }
         return commits;
     }
@@ -127,12 +134,37 @@ public class CommandLineGitProvider implements GitProvider {
     }
 
     @Override
-    public List<CommitData> getCommits(String latestRev, String earliestRev) {
+    public List<CommitData> getCommits(String latestRev, @Nullable String earliestRev) {
         List<CommitData> commits = new ArrayList<>();
-        commits.addAll(runGit(true, Arrays.asList("log", "--ignore-missing", "--no-show-signature", "--pretty=format:%H:%B", "-z", earliestRev + ".." + latestRev), CommandLineGitProvider::processGitLog));
+        String revRange = earliestRev != null ? earliestRev + ".." + latestRev : latestRev;
+        commits.addAll(runGit(true, Arrays.asList("log", "--ignore-missing", "--no-show-signature", "--pretty=format:%H:%h:%ct:%B", "-z", revRange), CommandLineGitProvider::processGitLog));
         // The previous command does not include information about "earliestRev", we retrieve it separately
-        commits.addAll(runGit(true, Arrays.asList("log", "--ignore-missing", "--no-show-signature", "--pretty=format:%H:%B", "--no-walk", earliestRev), CommandLineGitProvider::processGitLog));
+        if (earliestRev != null) {
+            commits.addAll(runGit(true, Arrays.asList("log", "--ignore-missing", "--no-show-signature", "--pretty=format:%H:%h:%ct:%B", "--no-walk", earliestRev), CommandLineGitProvider::processGitLog));
+        }
         return commits;
+    }
+
+    @Override
+    public List<Tag> getTags(boolean includeLightweight) {
+        List<String> args = Arrays.asList("for-each-ref", "refs/tags/", "--format", "%(objecttype):%(objectname):%(*objectname):%(refname:short)");
+        return runGit(true, args, (exitCode, stdout) -> {
+            List<Tag> tags = new ArrayList<>();
+            for (String line : stdout) {
+                String[] parts = line.trim().split(":", 4);
+                if (parts.length == 4) {
+                    String objectType = parts[0];
+                    String objectName = parts[3];
+                    if ("tag".equals(objectType)) {
+                        // *objectname is the commit id
+                        tags.add(new Tag(parts[2], objectName));
+                    } else if ("commit".equals(objectType) && includeLightweight) {
+                        tags.add(new Tag(parts[1], objectName));
+                    }
+                }
+            }
+            return tags;
+        });
     }
 
     @Override

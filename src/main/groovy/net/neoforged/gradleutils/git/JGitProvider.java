@@ -12,6 +12,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -21,9 +22,12 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * A provider which uses JGit, a pure Java implementation of Git.
@@ -120,29 +124,77 @@ public class JGitProvider implements GitProvider {
     }
 
     @Override
-    public List<CommitData> getCommits(String latestRev, String earliestRev) {
+    public List<CommitData> getCommits(String latestRev, @Nullable String earliestRev) {
         // List all commits between latest and earliest commits -- including the two ends
         final LogCommand logCommand;
         try {
             // Resolve both commits
-            final RevCommit earliestCommit, latestCommit;
+            final RevCommit latestCommit;
+            RevCommit earliestCommit = null;
             try (RevWalk walk = new RevWalk(git.getRepository())) {
-                earliestCommit = walk.parseCommit(git.getRepository().resolve(latestRev));
+                if (earliestRev != null) {
+                    earliestCommit = walk.parseCommit(git.getRepository().resolve(earliestRev));
+                }
                 latestCommit = walk.parseCommit(git.getRepository().resolve(latestRev));
             }
             logCommand = git.log().add(latestCommit);
             // Exclude all parents of earliest commit
-            for (RevCommit parent : earliestCommit.getParents()) {
-                logCommand.not(parent);
+            if (earliestCommit != null) {
+                for (RevCommit parent : earliestCommit.getParents()) {
+                    logCommand.not(parent);
+                }
             }
 
             // List has order of latest (0) to earliest (list.size())
             final List<CommitData> commits = new ArrayList<>();
             for (RevCommit revCommit : logCommand.call()) {
-                commits.add(new CommitData(revCommit.toObjectId().name(), revCommit.getFullMessage()));
+                String message = revCommit.getFullMessage();
+                if (!message.endsWith("\n")) {
+                    message += "\n";
+                }
+                String commitId = revCommit.toObjectId().name();
+                String shortCommitId = revCommit.toObjectId().abbreviate(7).name();
+                Instant commitTime = Instant.ofEpochSecond(revCommit.getCommitTime());
+                commits.add(new CommitData(commitId, shortCommitId, commitTime, message));
             }
             return commits;
         } catch (IOException | GitAPIException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<Tag> getTags(boolean includeLightweight) {
+        try {
+            RefDatabase refDatabase = git.getRepository().getRefDatabase();
+            return git.tagList().call()
+                    .stream()
+                    .map(ref -> {
+                        String name = ref.getName();
+                        if (!name.startsWith("refs/tags/")) {
+                            return null;
+                        }
+                        name = name.substring("refs/tags/".length());
+                        Ref target = ref.getLeaf();
+                        try {
+                            target = refDatabase.peel(target);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        // annotated tags -> peeled object id should be the commit id
+                        ObjectId peeledObjectId = target.getPeeledObjectId();
+                        if (peeledObjectId != null) {
+                            return new Tag(peeledObjectId.getName(), name);
+                        } else if (includeLightweight) {
+                            return new Tag(target.getObjectId().getName(), name);
+                        } else {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } catch (GitAPIException e) {
             throw new RuntimeException(e);
         }
     }

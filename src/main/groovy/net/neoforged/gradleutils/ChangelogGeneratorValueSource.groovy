@@ -28,10 +28,10 @@ abstract class ChangelogGeneratorValueSource implements ValueSource<String, Para
     @Override
     String obtain() {
         final calculator = new VersionCalculator(parameters.versionSpec.get())
-        final generator = new ChangelogGenerator(calculator)
+        final generator = new ChangelogGenerator(calculator, parameters.versionSpec.get())
 
         try (GitProvider provider = GradleUtils.openGitProvider(parameters.workingDirectory.get().asFile)) {
-            return generator.generate(provider, parameters.earliestRevision.get())
+            return generator.generate(provider, parameters.earliestRevision.getOrNull())
         }
     }
 }

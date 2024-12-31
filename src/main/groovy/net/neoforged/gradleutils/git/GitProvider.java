@@ -7,6 +7,7 @@ package net.neoforged.gradleutils.git;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -85,14 +86,46 @@ public interface GitProvider extends AutoCloseable {
      * @return the commit information for the given refs,  starting from the latest revision to (and including)
      * the earliest revision
      */
-    List<CommitData> getCommits(String latestRev, String earliestRev);
+    List<CommitData> getCommits(String latestRev, @Nullable String earliestRev);
+
+    /**
+     * List all tags in the repository. The tag names are stripped of their refs/tags/ prefix already.
+     */
+    List<Tag> getTags(boolean includeLightweight);
+
+    class Tag {
+        private final String hash;
+        private final String name;
+
+        public Tag(String hash, String name) {
+            this.hash = hash;
+            this.name = name;
+        }
+
+        public String hash() {
+            return hash;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
 
     class CommitData {
         private final String hash;
+        private final String shortHash;
+        private final Instant commitTime;
         private final String message;
 
-        CommitData(String hash, String message) {
+        CommitData(String hash, String shortHash, Instant commitTime, String message) {
             this.hash = hash;
+            this.shortHash = shortHash;
+            this.commitTime = commitTime;
             this.message = message;
         }
 
@@ -100,8 +133,21 @@ public interface GitProvider extends AutoCloseable {
             return hash;
         }
 
+        public String shortHash() {
+            return shortHash;
+        }
+
+        public Instant commitTime() {
+            return commitTime;
+        }
+
         public String message() {
             return message;
+        }
+
+        @Override
+        public String toString() {
+            return hash;
         }
     }
 
