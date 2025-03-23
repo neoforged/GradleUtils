@@ -44,7 +44,6 @@ import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 import org.gradle.api.services.BuildServiceSpec
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Nested
 import org.gradle.plugins.signing.SigningExtension
 import org.gradle.plugins.signing.SigningPlugin
 
@@ -52,13 +51,14 @@ import javax.inject.Inject
 
 @CompileStatic
 abstract class GradleUtilsExtension {
-    private transient Project project
+    private final Project project
     private final Directory rootProjectDir
     private final Provider<String> projectVersion
     private final Provider<String> calculatedVersion
     @PackageScope
     final Provider<GitInfoValueSource.GitInfo> rawInfo
     private final Provider<Map<String, String>> gitInfo
+    private final VersionSpec versionSpec
 
     @Inject
     GradleUtilsExtension(Project project, ProjectLayout layout, ObjectFactory objects, ProviderFactory providers) {
@@ -67,6 +67,8 @@ abstract class GradleUtilsExtension {
         this.rootProjectDir = project.rootProject.layout.projectDirectory
         gitRoot.convention(layout.projectDirectory)
         getEnableMavenPublicationSummary().convention(true);
+
+        this.versionSpec = objects.newInstance(VersionSpec)
 
         this.calculatedVersion = providers.of(VersionCalculatorValueSource) {
             it.parameters {
@@ -122,10 +124,6 @@ abstract class GradleUtilsExtension {
     @DSLProperty
     abstract DirectoryProperty getGitRoot()
 
-    @Nested
-    @DSLProperty
-    abstract VersionSpec getVersionSpec()
-
     @Input
     @DSLProperty
     abstract Property<Boolean> getShouldSign()
@@ -146,6 +144,10 @@ abstract class GradleUtilsExtension {
                 return calculatedVersion.get()
             }
         }
+    }
+
+    VersionSpec getVersionSpec() {
+        return versionSpec
     }
 
     void version(Action<? extends VersionSpec> configureAction) {
