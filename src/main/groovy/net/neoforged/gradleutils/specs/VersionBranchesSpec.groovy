@@ -11,6 +11,8 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
 
+import java.util.regex.Pattern
+
 @CompileStatic
 abstract class VersionBranchesSpec {
     {
@@ -26,9 +28,19 @@ abstract class VersionBranchesSpec {
     @DSLProperty
     abstract Property<Boolean> getSuffixBranch();
 
-    // Branch names which are exempted from being suffixed (see suffixBranch above)
-    // Empty string means a situation where the branch cannot be named, for some reason (detached HEAD?)
+    /**
+     * Branch names which are exempted from being suffixed (see suffixBranch above)
+     * Empty string means a situation where the branch cannot be named, for some reason (detached HEAD?)
+     */
     @Input
     @DSLProperty
     abstract SetProperty<String> getSuffixExemptedBranches()
+
+    /**
+     * Branch name patterns which are exempted from being suffixed (see suffixBranch above)
+     * Empty string means a situation where the branch cannot be named, for some reason (detached HEAD?)
+     */
+    @Input
+    @DSLProperty
+    abstract SetProperty<Pattern> getSuffixExemptedBranchPatterns()
 }
