@@ -11,8 +11,6 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
 
-import java.util.regex.Pattern
-
 @CompileStatic
 abstract class VersionBranchesSpec {
     {
@@ -42,5 +40,5 @@ abstract class VersionBranchesSpec {
      */
     @Input
     @DSLProperty
-    abstract SetProperty<Pattern> getSuffixExemptedBranchPatterns()
+    abstract SetProperty<String> getSuffixExemptedBranchPatterns()
 }

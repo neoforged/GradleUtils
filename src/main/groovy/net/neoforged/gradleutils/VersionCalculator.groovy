@@ -122,7 +122,7 @@ class VersionCalculator {
         final longBranch = head.symbolic ? head?.target?.name : null
 
         String branch = longBranch != null ? Repository.shortenRefName(longBranch) : ''
-        if (branch in spec.branches.suffixExemptedBranches.get() || spec.branches.suffixExemptedBranchPatterns.any { branch ==~ it }) {
+        if (branch in spec.branches.suffixExemptedBranches.get() || spec.branches.suffixExemptedBranchPatterns.any { branch ==~ /$it/ }) {
             // Branch is exempted from suffix
             return null
         }
