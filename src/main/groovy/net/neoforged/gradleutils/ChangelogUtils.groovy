@@ -42,6 +42,7 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import org.jetbrains.annotations.Nullable
 
 import java.util.function.Function
 import java.util.regex.Pattern
@@ -584,9 +585,11 @@ class ChangelogUtils {
      * @param project The project to add changelog generation to.
      * @param rev The revision to start the changelog from.
      */
-    static void setupChangelogGeneration(final Project project, final String rev) {
+    static void setupChangelogGeneration(final Project project, @Nullable final String rev) {
         final TaskProvider<GenerateChangelogTask> task = project.getTasks().register(CHANGELOG_GENERATION_TASK_NAME, GenerateChangelogTask.class) {
-            it.startingRevision.set(rev)
+            if (rev != null) {
+                it.startingRevision.set(rev)
+            }
         }
 
         project.plugins.withType(LifecycleBasePlugin).configureEach {
