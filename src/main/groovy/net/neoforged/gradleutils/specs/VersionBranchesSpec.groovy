@@ -16,6 +16,8 @@ abstract class VersionBranchesSpec {
     {
         suffixBranch.convention(false)
         suffixExemptedBranches.convention(DEFAULT_ALLOWED_BRANCHES).addAll(DEFAULT_ALLOWED_BRANCHES)
+
+        suffixExemptedBranchPatterns.convention([])
     }
 
     private static final Collection<String> DEFAULT_ALLOWED_BRANCHES = Arrays.asList('', 'main', 'master', 'HEAD')
