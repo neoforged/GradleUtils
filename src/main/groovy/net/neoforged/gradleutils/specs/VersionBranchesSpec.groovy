@@ -16,6 +16,8 @@ abstract class VersionBranchesSpec {
     {
         suffixBranch.convention(false)
         suffixExemptedBranches.convention(DEFAULT_ALLOWED_BRANCHES).addAll(DEFAULT_ALLOWED_BRANCHES)
+
+        suffixExemptedBranchPatterns.convention([])
     }
 
     private static final Collection<String> DEFAULT_ALLOWED_BRANCHES = Arrays.asList('', 'main', 'master', 'HEAD')
@@ -26,9 +28,19 @@ abstract class VersionBranchesSpec {
     @DSLProperty
     abstract Property<Boolean> getSuffixBranch();
 
-    // Branch names which are exempted from being suffixed (see suffixBranch above)
-    // Empty string means a situation where the branch cannot be named, for some reason (detached HEAD?)
+    /**
+     * Branch names which are exempted from being suffixed (see suffixBranch above)
+     * Empty string means a situation where the branch cannot be named, for some reason (detached HEAD?)
+     */
     @Input
     @DSLProperty
     abstract SetProperty<String> getSuffixExemptedBranches()
+
+    /**
+     * Branch name patterns which are exempted from being suffixed (see suffixBranch above)
+     * Empty string means a situation where the branch cannot be named, for some reason (detached HEAD?)
+     */
+    @Input
+    @DSLProperty
+    abstract SetProperty<String> getSuffixExemptedBranchPatterns()
 }
