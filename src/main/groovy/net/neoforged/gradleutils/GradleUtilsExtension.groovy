@@ -150,7 +150,7 @@ abstract class GradleUtilsExtension {
         return versionSpec
     }
 
-    void version(Action<? extends VersionSpec> configureAction) {
+    void version(Action<? super VersionSpec> configureAction) {
         configureAction.execute(versionSpec)
     }
 
@@ -158,13 +158,13 @@ abstract class GradleUtilsExtension {
         return gitInfo.get()
     }
 
-    Action<? extends MavenArtifactRepository> getPublishingMaven(File defaultFolder = rootProjectDir.file('repo').asFile) {
+    Action<MavenArtifactRepository> getPublishingMaven(File defaultFolder = rootProjectDir.file('repo').asFile) {
         return GradleUtils.setupSnapshotCompatiblePublishing(projectVersion, 'https://maven.neoforged.net/releases',
                 defaultFolder, rootProjectDir.file('snapshot').asFile)
     }
 
     @SuppressWarnings('GrMethodMayBeStatic')
-    Action<? extends MavenArtifactRepository> getMaven() {
+    Action<MavenArtifactRepository> getMaven() {
         return GradleUtils.getForgeMaven()
     }
 
