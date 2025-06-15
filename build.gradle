@@ -2,7 +2,7 @@ plugins {
     id 'java-gradle-plugin'
     id 'groovy'
     id 'maven-publish'
-    id 'org.cadixdev.licenser' version '0.6.1'
+    id 'net.neoforged.licenser' version '0.7.5'
     id 'com.gradle.plugin-publish' version '1.1.0'
 }
 
@@ -77,22 +77,20 @@ tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
 }
 
 tasks.named('jar', Jar) {
-    try {
-        final ByteArrayOutputStream bos = new ByteArrayOutputStream()
-        project.exec {
-            commandLine('git', 'rev-parse', 'HEAD')
-            standardOutput(bos)
-        }.rethrowFailure().assertNormalExitValue()
-
-        final gitCommit = new String(bos.toByteArray())
-        // Store the git commit as the Implementation-Version of the tasks package
-        // TODO - re-evaluate: find a better way of storing this sha for use in template generation
-        manifest.attributes([
-                'Implementation-Version': gitCommit
-        ], 'net/neoforged/gradleutils/tasks/')
-    } catch (Exception ex) {
-        throw new IllegalStateException("Failed to determine the latest commit hash; check if 'git' is on the PATH", ex)
+    var gitCommitResult = project.providers.exec {
+        commandLine('git', 'rev-parse', 'HEAD')
     }
+    var gitCommit = gitCommitResult.result.zip(gitCommitResult.standardOutput.asText) { result, stdout ->
+        result.rethrowFailure()
+        result.assertNormalExitValue()
+        stdout
+    }
+
+    // Store the git commit as the Implementation-Version of the tasks package
+    // TODO - re-evaluate: find a better way of storing this sha for use in template generation
+    manifest.attributes([
+            'Implementation-Version': gitCommit.get()
+    ], 'net/neoforged/gradleutils/tasks/')
 }
 
 license {
@@ -110,7 +108,7 @@ license {
 
 gradlePlugin {
     website = 'https://github.com/neoforged/GradleUtils'
-    vcsUrl  = 'https://github.com/neoforged/GradleUtils.git'
+    vcsUrl = 'https://github.com/neoforged/GradleUtils.git'
 
     plugins {
         gradleutils {
@@ -225,7 +223,8 @@ abstract class GenerateChangelogTask extends DefaultTask {
     @OutputFile
     abstract RegularFileProperty getChangelogFile()
 
-    @javax.inject.Inject // This might look like a compile error in IDE, but it actually compiles okay
+    @javax.inject.Inject
+    // This might look like a compile error in IDE, but it actually compiles okay
     abstract ExecOperations getExecOperations()
 
     @TaskAction
