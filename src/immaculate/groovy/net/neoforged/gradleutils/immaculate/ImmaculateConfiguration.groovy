@@ -11,6 +11,8 @@ import dev.lukebemish.immaculate.ImmaculateExtension
 import org.gradle.api.GradleException
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
+import org.gradle.api.file.RegularFile
+import org.gradle.api.provider.Provider
 
 /**
  * This is a separate class to avoid class-loading issues when immaculate is *not* applied to the project.
@@ -20,7 +22,7 @@ final class ImmaculateConfiguration {
     }
 
     static void apply(Project project) {
-        final configPath = new File(project.rootDir, '.gradle/formatter-config.xml')
+        final configPath = project.layout.buildDirectory.file('formatter-config.xml')
 
         final extract = project.tasks.register('extractGUImmaculateConfiguration', ExtractImmaculateConfiguration) {
             it.output.set(configPath)
@@ -37,7 +39,7 @@ final class ImmaculateConfiguration {
         }
     }
 
-    static void configure(FormattingWorkflow workflow, File configPath) {
+    static void configure(FormattingWorkflow workflow, Provider<RegularFile> configPath) {
         workflow.java()
         // Ending files by a new line is good practice, and avoids "No newline at end of file" comments by Git.
         workflow.trailingNewline()
