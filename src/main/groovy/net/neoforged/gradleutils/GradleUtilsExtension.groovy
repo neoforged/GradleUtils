@@ -179,7 +179,7 @@ abstract class GradleUtilsExtension {
                 container.sonatype {
                     it.username.set(System.getenv('SONATYPE_USER') ?: '')
                     it.password.set(System.getenv('SONATYPE_PASSWORD') ?: '')
-                    it.nexusUrl.set(URI.create('https://s01.oss.sonatype.org/service/local/'))
+                    it.nexusUrl.set(URI.create('https://ossrh-staging-api.central.sonatype.com'))
                 }
             }
         }
