@@ -8,7 +8,7 @@
       "name": "Updating version",
       "filePatterns": ["build.gradle"],
       "bumpType": "patch",
-      "matchStrings": ["^version\\s*=?\\s*'(?<version>.+)'$"]
+      "matchStrings": ["'(?<version>.+)'\\s*\\\/(\\\/|\\*)\\s*renovate bump"]
     }
   ]
 }
