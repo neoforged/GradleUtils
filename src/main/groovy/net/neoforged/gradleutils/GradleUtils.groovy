@@ -136,9 +136,9 @@ class GradleUtils {
                 }
             } else {
                 if (version.endsWith("-SNAPSHOT")) {
-                    it.url = 'file://' + defaultSnapshotFolder.getAbsolutePath()
+                    it.url = defaultSnapshotFolder.getAbsoluteFile().toURI()
                 } else {
-                    it.url = 'file://' + defaultFolder.getAbsolutePath()
+                    it.url = defaultFolder.getAbsoluteFile().toURI()
                 }
             }
         }
