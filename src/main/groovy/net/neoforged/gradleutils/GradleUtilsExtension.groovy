@@ -55,6 +55,7 @@ abstract class GradleUtilsExtension {
     private final Directory rootProjectDir
     private final Provider<String> projectVersion
     private final Provider<String> calculatedVersion
+    private final Provider<String> finalVersion
     @PackageScope
     final Provider<GitInfoValueSource.GitInfo> rawInfo
     private final Provider<Map<String, String>> gitInfo
@@ -76,6 +77,9 @@ abstract class GradleUtilsExtension {
                 it.versionConfiguration.set(getVersionSpec())
             }
         }
+
+        var versionProperty = providers.gradleProperty('version')
+        this.finalVersion = versionProperty.orElse(calculatedVersion)
 
         this.rawInfo = providers.of(GitInfoValueSource) {
             it.parameters {
@@ -141,7 +145,7 @@ abstract class GradleUtilsExtension {
         return new Object() {
             @Override
             String toString() {
-                return calculatedVersion.get()
+                return finalVersion.get()
             }
         }
     }
