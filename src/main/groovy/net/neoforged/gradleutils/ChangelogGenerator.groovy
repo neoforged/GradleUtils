@@ -63,7 +63,9 @@ class ChangelogGenerator {
 
         // Some commits for some reason are having the LF trimmed off
         // If no LF exists just append it to the end of the message
-        if(!message.endsWith('\n')) message += '\n'
+        if (!message.endsWith('\n')) {
+            message += '\n'
+        }
 
         // Assume that the message contains at least one LF
         // If the first and last LF in the message are at the same position, then there is only one singular LF
