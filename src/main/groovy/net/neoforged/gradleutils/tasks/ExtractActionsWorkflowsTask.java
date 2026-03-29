@@ -9,6 +9,7 @@ import groovy.text.GStringTemplateEngine;
 import org.gradle.api.plugins.BasePluginExtension;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,6 +26,7 @@ import java.util.zip.ZipInputStream;
 /**
  * Task to extract the GitHub Action workflows from the included template zip file.
  */
+@DisableCachingByDefault(because = "Task deletes its output directory")
 public abstract class ExtractActionsWorkflowsTask extends CIConfigExtractionTask {
 
     public ExtractActionsWorkflowsTask() {

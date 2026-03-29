@@ -15,6 +15,7 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.work.DisableCachingByDefault;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -27,6 +28,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.zip.ZipEntry;
 
+@DisableCachingByDefault(because = "Task deletes its output directory")
 public abstract class CIConfigExtractionTask extends DefaultTask {
     private final String templateZipName, targetDirName;
     protected CIConfigExtractionTask(String templateZipName, String targetDirName) {
