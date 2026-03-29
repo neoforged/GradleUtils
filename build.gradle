@@ -8,7 +8,7 @@ plugins {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(17)
     }
     withSourcesJar()
 }
@@ -23,18 +23,6 @@ version '5.1.1' // renovate bump
 repositories {
     mavenCentral()
     gradlePluginPortal()
-}
-
-// Immaculate runs on J17
-tasks.named('compileImmaculateJava', JavaCompile).configure {
-    javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-}
-tasks.named('compileImmaculateGroovy', GroovyCompile).configure {
-    javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
 }
 
 if (System.getenv('GPP_KEY')) {
