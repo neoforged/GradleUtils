@@ -25,8 +25,8 @@ import groovy.transform.NamedVariant
 import groovy.transform.PackageScope
 import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import io.github.gradlenexus.publishplugin.NexusPublishPlugin
-import net.minecraftforge.gdi.annotations.DSLProperty
-import net.minecraftforge.gdi.annotations.ProjectGetter
+import net.neoforged.gdi.annotations.DSLProperty
+import net.neoforged.gdi.annotations.ProjectGetter
 import net.neoforged.gradleutils.specs.VersionSpec
 import org.gradle.api.Action
 import org.gradle.api.Project

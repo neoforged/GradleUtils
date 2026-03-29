@@ -6,7 +6,7 @@
 package net.neoforged.gradleutils.specs
 
 import groovy.transform.CompileStatic
-import net.minecraftforge.gdi.annotations.DSLProperty
+import net.neoforged.gdi.annotations.DSLProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
