@@ -17,8 +17,8 @@ sourceSets {
     immaculate
 }
 
-group 'net.neoforged.gradleutils'
-version '5.1.1' // renovate bump
+group = 'net.neoforged.gradleutils'
+version = '5.1.1' // renovate bump
 
 repositories {
     mavenCentral()
@@ -168,7 +168,7 @@ publishing {
     }
     repositories {
         maven {
-            name 'forge'
+            name = 'forge'
             if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
                 def publishingEndpoint = System.env.MAVEN_URL_RELEASE ?: 'https://maven.neoforged.net/releases'
 
@@ -185,7 +185,7 @@ publishing {
                     password = System.env.MAVEN_PASSWORD
                 }
             } else {
-                url 'repo'
+                url = 'repo'
             }
         }
     }
