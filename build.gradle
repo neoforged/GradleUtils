@@ -47,7 +47,7 @@ dependencies {
     }
 
     immaculateImplementation(gradleApi())
-    immaculateImplementation "dev.lukebemish.immaculate:dev.lukebemish.immaculate.gradle.plugin:0.2.4"
+    immaculateImplementation "dev.lukebemish.immaculate:dev.lukebemish.immaculate.gradle.plugin:0.2.5"
 }
 
 sourceSets {
