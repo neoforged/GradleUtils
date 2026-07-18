@@ -2,13 +2,13 @@ plugins {
     id 'java-gradle-plugin'
     id 'groovy'
     id 'maven-publish'
-    id 'org.cadixdev.licenser' version '0.6.1'
-    id 'com.gradle.plugin-publish' version '1.1.0'
+    id 'net.neoforged.licenser' version '0.7.5'
+    id 'com.gradle.plugin-publish' version '2.1.1'
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(17)
     }
     withSourcesJar()
 }
@@ -17,24 +17,12 @@ sourceSets {
     immaculate
 }
 
-group 'net.neoforged.gradleutils'
-version '5.1.1' // renovate bump
+group = 'net.neoforged.gradleutils'
+version = '6.0.0' // renovate bump
 
 repositories {
     mavenCentral()
     gradlePluginPortal()
-}
-
-// Immaculate runs on J17
-tasks.named('compileImmaculateJava', JavaCompile).configure {
-    javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-}
-tasks.named('compileImmaculateGroovy', GroovyCompile).configure {
-    javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
 }
 
 if (System.getenv('GPP_KEY')) {
@@ -49,17 +37,17 @@ configurations {
 }
 
 dependencies {
-    api 'org.eclipse.jgit:org.eclipse.jgit:5.10.0.202012080955-r'
+    api 'org.eclipse.jgit:org.eclipse.jgit:7.7.0.202606012155-r'
     api 'io.github.gradle-nexus:publish-plugin:2.0.0'
 
-    api("net.neoforged:groovydslimprover:${gdi_version}") {
+    api("net.neoforged:groovydslimprover:2.0.0") {
         capabilities {
             requireCapability 'net.neoforged:groovydslimprover-base'
         }
     }
 
     immaculateImplementation(gradleApi())
-    immaculateImplementation "dev.lukebemish.immaculate:dev.lukebemish.immaculate.gradle.plugin:0.1.6"
+    immaculateImplementation "dev.lukebemish.immaculate:dev.lukebemish.immaculate.gradle.plugin:0.2.5"
 }
 
 sourceSets {
@@ -77,22 +65,20 @@ tasks.named(sourceSets.main.processResourcesTaskName, Copy) {
 }
 
 tasks.named('jar', Jar) {
-    try {
-        final ByteArrayOutputStream bos = new ByteArrayOutputStream()
-        project.exec {
-            commandLine('git', 'rev-parse', 'HEAD')
-            standardOutput(bos)
-        }.rethrowFailure().assertNormalExitValue()
-
-        final gitCommit = new String(bos.toByteArray())
-        // Store the git commit as the Implementation-Version of the tasks package
-        // TODO - re-evaluate: find a better way of storing this sha for use in template generation
-        manifest.attributes([
-                'Implementation-Version': gitCommit
-        ], 'net/neoforged/gradleutils/tasks/')
-    } catch (Exception ex) {
-        throw new IllegalStateException("Failed to determine the latest commit hash; check if 'git' is on the PATH", ex)
+    var gitCommitResult = project.providers.exec {
+        commandLine('git', 'rev-parse', 'HEAD')
     }
+    var gitCommit = gitCommitResult.result.zip(gitCommitResult.standardOutput.asText) { result, stdout ->
+        result.rethrowFailure()
+        result.assertNormalExitValue()
+        stdout
+    }
+
+    // Store the git commit as the Implementation-Version of the tasks package
+    // TODO - re-evaluate: find a better way of storing this sha for use in template generation
+    manifest.attributes([
+            'Implementation-Version': gitCommit.get()
+    ], 'net/neoforged/gradleutils/tasks/')
 }
 
 license {
@@ -110,7 +96,7 @@ license {
 
 gradlePlugin {
     website = 'https://github.com/neoforged/GradleUtils'
-    vcsUrl  = 'https://github.com/neoforged/GradleUtils.git'
+    vcsUrl = 'https://github.com/neoforged/GradleUtils.git'
 
     plugins {
         gradleutils {
@@ -182,7 +168,7 @@ publishing {
     }
     repositories {
         maven {
-            name 'forge'
+            name = 'forge'
             if (System.env.MAVEN_USER && System.env.MAVEN_PASSWORD) {
                 def publishingEndpoint = System.env.MAVEN_URL_RELEASE ?: 'https://maven.neoforged.net/releases'
 
@@ -199,7 +185,7 @@ publishing {
                     password = System.env.MAVEN_PASSWORD
                 }
             } else {
-                url 'repo'
+                url = 'repo'
             }
         }
     }
@@ -225,7 +211,8 @@ abstract class GenerateChangelogTask extends DefaultTask {
     @OutputFile
     abstract RegularFileProperty getChangelogFile()
 
-    @javax.inject.Inject // This might look like a compile error in IDE, but it actually compiles okay
+    @javax.inject.Inject
+    // This might look like a compile error in IDE, but it actually compiles okay
     abstract ExecOperations getExecOperations()
 
     @TaskAction

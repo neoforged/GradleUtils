@@ -6,9 +6,8 @@
 package net.neoforged.gradleutils.specs
 
 import groovy.transform.CompileStatic
-import net.minecraftforge.gdi.annotations.DSLProperty
+import net.neoforged.gdi.annotations.DSLProperty
 import net.neoforged.gradleutils.InternalAccessor
-import org.gradle.api.Action
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Nested

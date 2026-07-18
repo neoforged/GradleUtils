@@ -11,7 +11,7 @@ jobs:
   build:
     uses: neoforged/actions/.github/workflows/gradle-publish.yml@main
     with:
-      java: 8
+      java: 17
       version_task: 'configureGitHubActions'
       gradle_tasks: 'publish publishPlugins'
     secrets:
