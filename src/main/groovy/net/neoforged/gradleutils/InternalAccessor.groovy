@@ -24,7 +24,7 @@ class InternalAccessor {
     }
 
     static String generateChangelog(ProviderFactory providers, VersionSpec versionConfig, Directory workingDirectory,
-                                    String earliestRevision) {
+                                    @Nullable String earliestRevision) {
         final changelog = providers.of(ChangelogGeneratorValueSource) {
             it.parameters {
                 it.workingDirectory.set(workingDirectory)

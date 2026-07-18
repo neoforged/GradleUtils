@@ -30,6 +30,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
@@ -59,6 +60,7 @@ public abstract class GenerateChangelogTask extends DefaultTask {
     public abstract RegularFileProperty getOutputFile();
 
     @Input
+    @Optional
     public abstract Property<String> getStartingRevision();
 
     @Nested
@@ -66,7 +68,7 @@ public abstract class GenerateChangelogTask extends DefaultTask {
 
     @TaskAction
     public void generate() {
-        final String startingRev = getStartingRevision().get();
+        final String startingRev = getStartingRevision().getOrNull();
 
         final String changelog = InternalAccessor.generateChangelog(getProviders(), getVersionSpec().get(),
                 getLayout().getProjectDirectory(), startingRev);

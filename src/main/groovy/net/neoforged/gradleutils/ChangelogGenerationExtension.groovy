@@ -21,6 +21,13 @@ class ChangelogGenerationExtension {
         this.project = project
     }
 
+    void enable() {
+        ChangelogUtils.setupChangelogGeneration(project, null)
+        project.afterEvaluate {
+            afterEvaluate(project)
+        }
+    }
+
     void from(final String revision) {
         ChangelogUtils.setupChangelogGeneration(project, revision)
         project.afterEvaluate {
